@@ -22,7 +22,6 @@ import {
   Volume2,
   VolumeX,
   ArrowLeft,
-  Barcode as BarcodeIcon,
 } from "lucide-react";
 
 interface ScanResult {
@@ -59,7 +58,6 @@ export default function ScanStationPage() {
   const [currentDate, setCurrentDate] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [manualBarcode, setManualBarcode] = useState<string>("");
   const [successBanner, setSuccessBanner] = useState<{
     action: "CHECK_IN" | "CHECK_OUT";
     title: string;
@@ -347,15 +345,7 @@ export default function ScanStationPage() {
     };
   }, []);
 
-  // 7. Xử lý quét thủ công từ ô input
-  const handleManualScan = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manualBarcode.trim()) return;
-    handleBarcodeProcess(manualBarcode.trim(), "WEBCAM");
-    setManualBarcode("");
-  };
-
-  // 8. Gửi Báo cáo Sự cố Thiết bị
+  // 7. Gửi Báo cáo Sự cố Thiết bị
   const handleSubmitIncident = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!equipmentModal || !incidentTitle.trim()) return;
@@ -417,7 +407,7 @@ export default function ScanStationPage() {
               </span>
             </h1>
             <p className="text-xs text-gray-500 font-medium">
-              Quét thẻ sinh viên hoặc nhập mã trực tiếp để Check-in / Check-out
+              Quét thẻ sinh viên trước camera để Check-in / Check-out tự động
             </p>
           </div>
         </div>
@@ -566,59 +556,6 @@ export default function ScanStationPage() {
                 </div>
               </div>
             </div>
-
-            {/* KHU VỰC NHẬP MÃ THẺ / BẮN QUÉT TRỰC TIẾP */}
-            <div className="space-y-3 pt-1">
-              <div className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                <BarcodeIcon className="h-4 w-4 text-gray-500" />
-                Nhập mã thẻ / Quét trực tiếp
-              </div>
-
-              <form onSubmit={handleManualScan} className="flex gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={manualBarcode}
-                    onChange={(e) => setManualBarcode(e.target.value)}
-                    placeholder="Nhập mã thẻ SV (VD: 2373401010100) hoặc mã máy (EQ-...)"
-                    className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 shadow-sm transition"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow transition flex items-center gap-1.5 flex-shrink-0"
-                >
-                  <Zap className="h-3.5 w-3.5" />
-                  Quét
-                </button>
-              </form>
-
-              {/* CÁC NÚT MÔ PHỎNG NHANH DẠNG TAG BO TRÒN PASTEL */}
-              <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs">
-                <span className="text-[11px] font-semibold text-gray-400">Mô phỏng nhanh:</span>
-                <button
-                  type="button"
-                  onClick={() => handleBarcodeProcess("2373401010100", "WEBCAM")}
-                  className="px-3 py-1 bg-sky-50 text-sky-800 border border-sky-200 hover:bg-sky-100 rounded-full font-medium transition text-xs shadow-2xs"
-                >
-                  SV: Nguyễn Thiện Đức
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleBarcodeProcess("2174802010788", "WEBCAM")}
-                  className="px-3 py-1 bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100 rounded-full font-medium transition text-xs shadow-2xs"
-                >
-                  SV: Nguyễn Bảo Thiên
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleBarcodeProcess("EQ-LAB801-PC01", "WEBCAM")}
-                  className="px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 rounded-full font-medium transition text-xs shadow-2xs"
-                >
-                  Máy: EQ-LAB801-PC01
-                </button>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -722,7 +659,7 @@ export default function ScanStationPage() {
                 </div>
                 <div className="text-sm font-semibold text-gray-700">Chưa có lượt quét nào</div>
                 <p className="text-xs text-gray-400 mt-1 max-w-xs">
-                  Đưa thẻ sinh viên vào trước camera hoặc nhập mã để Check-in / Check-out.
+                  Đưa thẻ sinh viên vào trước camera để Check-in / Check-out tự động.
                 </p>
               </div>
             )}
