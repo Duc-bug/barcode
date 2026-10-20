@@ -82,24 +82,24 @@ export default function EquipmentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
       {/* THANH HEADER ĐIỀU HƯỚNG (Ẩn khi in ấn) */}
-      <header className="print:hidden border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30">
+      <header className="print:hidden border-b border-gray-200 bg-white/95 backdrop-blur-md px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-3">
           <Link
-            href="/scan-station"
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
-            title="Về Trạm Quét"
+            href="/"
+            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+            title="Về Trang Chủ"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <Barcode className="h-6 w-6 text-red-500" />
+            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Barcode className="h-6 w-6 text-red-600" />
               QUẢN LÝ THIẾT BỊ & IN NHÃN BARCODE PHÒNG LAB
             </h1>
-            <p className="text-xs text-slate-400">
-              Đại học Văn Lang • In tem Code 128 dán CPU máy tính trạm và kiểm tra trạng thái
+            <p className="text-xs text-gray-500">
+              In tem Code 128 dán CPU máy tính trạm và kiểm tra trạng thái hoạt động
             </p>
           </div>
         </div>
@@ -107,15 +107,15 @@ export default function EquipmentsPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowBatchModal(true)}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition"
+            className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-gray-300 shadow-sm transition"
           >
-            <Plus className="h-4 w-4 text-emerald-400" />
+            <Plus className="h-4 w-4 text-emerald-600" />
             Tạo Tem Barcode Hàng Loạt
           </button>
 
           <button
             onClick={handlePrint}
-            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-red-600/30 transition"
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition transform hover:-translate-y-0.5 active:translate-y-0"
           >
             <Printer className="h-4 w-4" />
             In Bảng Tem Barcode (Print PDF / A4)
@@ -127,28 +127,26 @@ export default function EquipmentsPage() {
       <div className="print:hidden max-w-7xl mx-auto px-6 py-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[300px]">
           <div className="relative flex-1 min-w-[220px]">
-            <Search className="h-4 w-4 text-slate-500 absolute left-3 top-2.5" />
+            <Search className="h-4 w-4 text-gray-400 absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Tìm theo mã Barcode (VD: EQ-LAB801...) hoặc tên máy..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500"
+              className="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-4 py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 shadow-sm"
             />
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-800 text-xs">
-            <Filter className="h-3.5 w-3.5 text-slate-400" />
+          <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-300 text-xs shadow-sm">
+            <Filter className="h-3.5 w-3.5 text-gray-500" />
             <select
               value={selectedLabId}
               onChange={(e) => setSelectedLabId(e.target.value)}
-              className="bg-transparent text-white font-medium focus:outline-none cursor-pointer"
+              className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer"
             >
-              <option value="ALL" className="bg-slate-900">
-                Tất cả phòng Lab
-              </option>
+              <option value="ALL">Tất cả phòng Lab</option>
               {labs.map((l) => (
-                <option key={l.id} value={l.id} className="bg-slate-900">
+                <option key={l.id} value={l.id}>
                   {l.labCode} - {l.labName}
                 </option>
               ))}
@@ -156,11 +154,11 @@ export default function EquipmentsPage() {
           </div>
 
           {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs">
+          <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-lg border border-gray-200 text-xs">
             <button
               onClick={() => setStatusFilter("ALL")}
               className={`px-2.5 py-1 rounded font-semibold transition ${
-                statusFilter === "ALL" ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                statusFilter === "ALL" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
               }`}
             >
               Tất cả ({equipments.length})
@@ -169,55 +167,55 @@ export default function EquipmentsPage() {
               onClick={() => setStatusFilter("GOOD")}
               className={`px-2.5 py-1 rounded font-semibold transition flex items-center gap-1 ${
                 statusFilter === "GOOD"
-                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                  : "text-slate-400 hover:text-emerald-400"
+                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-sm"
+                  : "text-gray-600 hover:text-emerald-700"
               }`}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
               Tốt ({equipments.filter((e) => e.status === "GOOD").length})
             </button>
             <button
               onClick={() => setStatusFilter("BROKEN")}
               className={`px-2.5 py-1 rounded font-semibold transition flex items-center gap-1 ${
                 statusFilter === "BROKEN"
-                  ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                  : "text-slate-400 hover:text-rose-400"
+                  ? "bg-rose-50 text-rose-800 border border-rose-200 shadow-sm"
+                  : "text-gray-600 hover:text-rose-700"
               }`}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
               Hỏng ({equipments.filter((e) => e.status === "BROKEN").length})
             </button>
             <button
               onClick={() => setStatusFilter("REPAIRING")}
               className={`px-2.5 py-1 rounded font-semibold transition flex items-center gap-1 ${
                 statusFilter === "REPAIRING"
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                  : "text-slate-400 hover:text-amber-400"
+                  ? "bg-amber-50 text-amber-800 border border-amber-200 shadow-sm"
+                  : "text-gray-600 hover:text-amber-700"
               }`}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
               Sửa ({equipments.filter((e) => e.status === "REPAIRING").length})
             </button>
           </div>
         </div>
 
-        <div className="text-xs text-slate-400">
-          Hiển thị: <span className="font-bold text-white">{filteredEquipments.length}</span> / {equipments.length} thiết bị
+        <div className="text-xs text-gray-500">
+          Hiển thị: <span className="font-bold text-gray-900">{filteredEquipments.length}</span> / {equipments.length} thiết bị
         </div>
       </div>
 
       {/* VÙNG HIỂN THỊ TEM BARCODE (HIỂN THỊ WEB VÀ SẴN SÀNG IN ẤN A4) */}
       <main className="max-w-7xl mx-auto px-6 pb-12">
         {/* Banner hướng dẫn in tem */}
-        <div className="print:hidden mb-6 p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
+        <div className="print:hidden mb-6 p-4 rounded-xl bg-white border border-gray-200 text-xs text-gray-600 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-red-500/10 text-red-400">
+            <div className="p-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100">
               <Printer className="h-5 w-5" />
             </div>
             <div>
-              <div className="font-bold text-white">Chế độ in tem dán Chuẩn A4 Decal</div>
-              <div className="text-slate-400 text-[11px]">
-                Nhấn nút &ldquo;In Bảng Tem Barcode&rdquo; ở góc trên. Trình duyệt sẽ tự động ẩn thanh điều hướng và xếp các tem vừa vặn 3 cột trên khổ giấy A4 để dán lên vỏ máy tính trạm.
+              <div className="font-bold text-gray-900">Chế độ in tem dán Chuẩn A4 Decal</div>
+              <div className="text-gray-500 text-[11px]">
+                Nhấn nút &ldquo;In Bảng Tem Barcode&rdquo; ở góc trên. Trình duyệt sẽ tự động xếp các tem vừa vặn 3 cột trên khổ giấy A4 để dán lên vỏ máy tính trạm.
               </div>
             </div>
           </div>
@@ -239,19 +237,19 @@ export default function EquipmentsPage() {
                 <button
                   onClick={() => handleToggleStatus(eq.id, eq.status)}
                   title="Nhấn để đổi trạng thái thiết bị (Tốt -> Hỏng -> Đang sửa)"
-                  className={`px-2.5 py-0.5 rounded-full font-semibold transition cursor-pointer hover:opacity-80 active:scale-95 ${
+                  className={`px-3 py-1 rounded-full font-semibold transition cursor-pointer hover:opacity-85 shadow-sm active:scale-95 ${
                     eq.status === "GOOD"
-                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                       : eq.status === "BROKEN"
-                      ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                      : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                      ? "bg-rose-50 text-rose-700 border border-rose-200"
+                      : "bg-amber-50 text-amber-700 border border-amber-200"
                   }`}
                 >
                   ● {eq.status === "GOOD" ? "Hoạt động tốt" : eq.status === "BROKEN" ? "Hỏng hóc" : "Đang sửa"}
                 </button>
 
                 {eq.incidents?.length > 0 && (
-                  <span className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 text-[10px] border border-rose-800">
+                  <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-semibold border border-rose-200">
                     {eq.incidents.length} sự cố mở
                   </span>
                 )}
@@ -261,7 +259,7 @@ export default function EquipmentsPage() {
         </div>
 
         {filteredEquipments.length === 0 && !loading && (
-          <div className="text-center py-16 text-slate-500">
+          <div className="text-center py-16 text-gray-400">
             Không tìm thấy thiết bị nào khớp với từ khóa tìm kiếm.
           </div>
         )}
@@ -269,52 +267,52 @@ export default function EquipmentsPage() {
 
       {/* MODAL TẠO BATCH TEM BARCODE HÀNG LOẠT */}
       {showBatchModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-              <Barcode className="h-5 w-5 text-red-500" />
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h3 className="text-base font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <Barcode className="h-5 w-5 text-red-600" />
               TẠO TEM BARCODE HÀNG LOẠT (BATCH)
             </h3>
-            <p className="text-xs text-slate-400 mb-4">
+            <p className="text-xs text-gray-500 mb-4">
               Tạo nhanh chuỗi mã vạch từ PC01 đến PC40 cho toàn bộ phòng máy Lab.
             </p>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="text-slate-400 block mb-1">Tiền tố mã vạch (Barcode Prefix):</label>
+                <label className="text-gray-600 block mb-1">Tiền tố mã vạch (Barcode Prefix):</label>
                 <input
                   type="text"
                   value={batchPrefix}
                   onChange={(e) => setBatchPrefix(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono"
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 font-mono focus:outline-none focus:border-red-500"
                   placeholder="EQ-LAB801-PC"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Bắt đầu từ số:</label>
+                  <label className="text-gray-600 block mb-1">Bắt đầu từ số:</label>
                   <input
                     type="number"
                     value={batchStart}
                     onChange={(e) => setBatchStart(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono"
+                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 font-mono focus:outline-none focus:border-red-500"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">Số lượng máy (Count):</label>
+                  <label className="text-gray-600 block mb-1">Số lượng máy (Count):</label>
                   <input
                     type="number"
                     value={batchCount}
                     onChange={(e) => setBatchCount(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono"
+                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 font-mono focus:outline-none focus:border-red-500"
                   />
                 </div>
               </div>
 
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] text-slate-300">
-                <span className="text-slate-500">Mẫu mã vạch sẽ tạo:</span>
-                <div className="text-emerald-400 font-mono font-bold mt-1">
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-[11px] text-gray-700">
+                <span className="text-gray-500">Mẫu mã vạch sẽ tạo:</span>
+                <div className="text-emerald-700 font-mono font-bold mt-1">
                   {batchPrefix}01 &rarr; {batchPrefix}
                   {batchCount < 10 ? `0${batchCount}` : batchCount}
                 </div>
@@ -324,7 +322,7 @@ export default function EquipmentsPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowBatchModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold"
               >
                 Hủy
               </button>
@@ -335,7 +333,7 @@ export default function EquipmentsPage() {
                   );
                   setShowBatchModal(false);
                 }}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-xs"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs shadow-sm"
               >
                 Xác nhận tạo lô tem
               </button>

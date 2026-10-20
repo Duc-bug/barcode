@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { soundFX } from "@/lib/audio";
 import {
@@ -16,12 +17,15 @@ import {
   RefreshCw,
   Sliders,
   History,
-  Send,
   Sparkles,
   LogIn,
   LogOut,
   Volume2,
   VolumeX,
+  ArrowLeft,
+  Video,
+  RotateCcw,
+  Barcode as BarcodeIcon,
 } from "lucide-react";
 
 interface ScanResult {
@@ -66,6 +70,12 @@ export default function ScanStationPage() {
   const [isSoundEnabled, setIsSoundEnabled] = useState<boolean>(true);
   const [scanSuccessFlash, setScanSuccessFlash] = useState<boolean>(false);
   const [cameraActive, setCameraActive] = useState<boolean>(false);
+
+  // Danh sách camera và chọn camera
+  const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string>("");
+  const [cameraRestartKey, setCameraRestartKey] = useState<number>(0);
+  const [manualInput, setManualInput] = useState<string>("");
 
   // Modal báo sự cố thiết bị khi quét mã EQ-
   const [equipmentModal, setEquipmentModal] = useState<EquipmentData | null>(null);
@@ -121,7 +131,7 @@ export default function ScanStationPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // 2. Tải danh sách Logs gần đây
+  // 2. Tải danh sách Logs gần đây (tự động đồng bộ mỗi 5s)
   const fetchStationData = useCallback(async () => {
     try {
       const res = await fetch("/api/attendance/scan");
@@ -261,26 +271,42 @@ export default function ScanStationPage() {
     }
   };
 
-  // 5. Custom Hook Lớp 1: Anti-Cheat Keystroke Timing (Súng bắn USB)
-  const { lastVelocity, cheatAlert, clearCheatAlert } = useBarcodeScanner({
+  // 5. Súng quét USB HID (Tự động bắt chuỗi súng quét barcode toàn màn hình)
+  useBarcodeScanner({
     onScan: (barcode) => {
       handleBarcodeProcess(barcode, "USB_SCANNER");
     },
-    onCheatDetected: () => {
-      if (isSoundEnabled) soundFX.playWarning();
-    },
-    maxKeyInterval: 55,
-    minBarcodeLength: 6,
+    minBarcodeLength: 4,
   });
 
   // 6. KHỞI CHẠY BỘ QUÉT CAMERA BẰNG HTML5-QRCODE (ZXING ENGINE CHUẨN CODE 128 / CODE 39)
   useEffect(() => {
     let isCancelled = false;
 
-    async function startScanner() {
+    async function initCamera() {
       try {
         const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
         if (isCancelled) return;
+
+        // Lấy danh sách các camera có sẵn
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          if (devices && devices.length > 0) {
+            setCameras(devices);
+            if (!selectedCameraId) {
+              setSelectedCameraId(devices[0].id);
+            }
+          }
+        } catch (e) {
+          console.warn("Không lấy được danh sách camera:", e);
+        }
+
+        // Dừng scanner cũ nếu đang chạy
+        if (html5QrCodeRef.current) {
+          try {
+            await html5QrCodeRef.current.stop();
+          } catch (e) {}
+        }
 
         const html5QrCode = new Html5Qrcode("interactive-webcam-reader", {
           formatsToSupport: [
@@ -295,14 +321,18 @@ export default function ScanStationPage() {
 
         html5QrCodeRef.current = html5QrCode;
 
+        const cameraConfig = selectedCameraId
+          ? { deviceId: { exact: selectedCameraId } }
+          : { facingMode: "user" };
+
         await html5QrCode.start(
-          { facingMode: "user" },
+          cameraConfig,
           {
-            fps: 25,
+            fps: 28, // Tốc độ lấy khung hình cao giúp nhận diện tức thì
             qrbox: (viewfinderWidth, viewfinderHeight) => {
-              // Khung quét hình chữ nhật ngang rộng phù hợp mã vạch 1D Code 128
-              const width = Math.min(viewfinderWidth * 0.9, 480);
-              const height = Math.min(viewfinderHeight * 0.65, 220);
+              // Khung quét hình chữ nhật ngang siêu rộng tối ưu riêng cho mã vạch 1D Code 128
+              const width = Math.min(viewfinderWidth * 0.94, 520);
+              const height = Math.min(viewfinderHeight * 0.65, 230);
               return { width, height };
             },
             aspectRatio: 1.333333,
@@ -321,7 +351,7 @@ export default function ScanStationPage() {
       }
     }
 
-    startScanner();
+    initCamera();
 
     return () => {
       isCancelled = true;
@@ -329,7 +359,7 @@ export default function ScanStationPage() {
         html5QrCodeRef.current.stop().catch(() => {});
       }
     };
-  }, []);
+  }, [selectedCameraId, cameraRestartKey]);
 
   // 7. Gửi Báo cáo Sự cố Thiết bị
   const handleSubmitIncident = async (e: React.FormEvent) => {
@@ -351,54 +381,60 @@ export default function ScanStationPage() {
       });
       const data = await res.json();
       if (data.success) {
-        soundFX.playSuccess();
-        setIncidentSuccess(`Đã tạo phiếu báo hỏng thành công cho thiết bị ${equipmentModal.equipmentBarcode}!`);
+        setIncidentSuccess("Đã ghi nhận sự cố thành công! Bộ phận kỹ thuật sẽ sớm kiểm tra.");
         setTimeout(() => {
           setEquipmentModal(null);
           setIncidentSuccess(null);
           setIncidentTitle("");
           setIncidentDesc("");
-        }, 1800);
+        }, 2000);
+      } else {
+        alert("Lỗi: " + data.message);
       }
     } catch (err: any) {
-      alert("Lỗi khi gửi sự cố: " + err.message);
+      alert("Lỗi kết nối: " + err.message);
     } finally {
       setIncidentSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans flex flex-col">
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* TOP HEADER */}
-      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      {/* TOP HEADER (LIGHT MODE) */}
+      <header className="border-b border-gray-200 bg-white/95 backdrop-blur-md px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-sm sticky top-0 z-30">
         <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-xl bg-gradient-to-tr from-rose-600 via-red-500 to-amber-500 flex items-center justify-center shadow-lg shadow-red-500/20">
-            <Zap className="h-6 w-6 text-white" />
+          <Link
+            href="/"
+            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+            title="Quay lại Trang Chủ"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div className="h-10 w-10 rounded-xl bg-red-600 flex items-center justify-center shadow-md shadow-red-600/20 text-white">
+            <Zap className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-              VLU LAB CHECK-IN / CHECK-OUT
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <h1 className="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-2">
+              TRẠM ĐIỂM DANH BARCODE PHÒNG LAB
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                 TỰ ĐỘNG
               </span>
             </h1>
-            <p className="text-xs text-slate-400">
-              Trường Đại học Văn Lang • Khoa Công nghệ Thông tin • Điểm danh vào - ra phòng Lab bằng Barcode
+            <p className="text-xs text-gray-500">
+              Quét thẻ sinh viên hoặc bóp cò súng quét để Check-in / Check-out
             </p>
           </div>
         </div>
 
-        {/* CỐ ĐỊNH PHÒNG TRỰC THỰC TẾ + TRỢ LÝ GIỌNG NÓI + ĐỒNG HỒ */}
-        <div className="flex items-center gap-4">
-          <div className="bg-slate-800/90 px-3.5 py-2 rounded-xl border border-slate-700 text-xs flex items-center gap-3">
-            <Laptop className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+        {/* PHÒNG TRỰC + NÚT ÂM THANH + ĐỒNG HỒ */}
+        <div className="flex items-center gap-3">
+          <div className="bg-gray-100 px-3.5 py-2 rounded-xl border border-gray-200 text-xs flex items-center gap-2.5">
+            <Laptop className="h-4 w-4 text-emerald-600 flex-shrink-0" />
             <div>
-              <div className="text-[10px] text-slate-400 uppercase font-semibold">Phòng máy thực hành:</div>
-              <div className="font-bold text-white">
-                LAB-CS3-G801 - Phòng Lab Mạng & An ninh mạng 8.01
-              </div>
+              <div className="text-[10px] text-gray-500 uppercase font-semibold">Phòng máy:</div>
+              <div className="font-bold text-gray-900">LAB-CS3-G801 (Mạng & An ninh mạng)</div>
             </div>
           </div>
 
@@ -406,76 +442,61 @@ export default function ScanStationPage() {
             onClick={() => setIsSoundEnabled(!isSoundEnabled)}
             className={`px-3 py-2 rounded-xl border text-xs flex items-center gap-1.5 transition ${
               isSoundEnabled
-                ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20 shadow-sm"
-                : "bg-slate-800/80 border-slate-700 text-slate-400 hover:text-white"
+                ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100 shadow-sm"
+                : "bg-gray-100 border-gray-200 text-gray-500 hover:text-gray-900"
             }`}
             title={isSoundEnabled ? "Nhấn để tắt âm thanh hiệu ứng" : "Nhấn để bật âm thanh hiệu ứng"}
           >
-            {isSoundEnabled ? <Volume2 className="h-4 w-4 text-emerald-400" /> : <VolumeX className="h-4 w-4" />}
+            {isSoundEnabled ? <Volume2 className="h-4 w-4 text-red-600" /> : <VolumeX className="h-4 w-4" />}
             <span className="hidden sm:inline font-bold">{isSoundEnabled ? "Âm thanh: BẬT" : "Âm thanh: TẮT"}</span>
           </button>
 
-          <div className="text-right">
-            <div className="text-2xl font-mono font-bold tracking-wider text-emerald-400 flex items-center gap-2">
-              <Clock className="h-5 w-5 text-emerald-400 animate-pulse" />
+          <div className="text-right pl-2 border-l border-gray-200">
+            <div className="text-2xl font-mono font-bold tracking-wider text-red-600 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-red-600" />
               {currentTime || "00:00:00"}
             </div>
-            <div className="text-xs text-slate-400 capitalize">{currentDate}</div>
+            <div className="text-xs text-gray-500 capitalize">{currentDate}</div>
           </div>
         </div>
       </header>
 
-      {/* ALERT & SUCCESS BANNERS */}
-      {cheatAlert && (
-        <div className="bg-rose-950/90 border-y border-rose-500/50 px-6 py-3 text-rose-200 flex items-center justify-between gap-4 animate-bounce">
-          <div className="flex items-center gap-3">
-            <ShieldAlert className="h-6 w-6 text-rose-400 flex-shrink-0" />
-            <p className="text-sm font-semibold">{cheatAlert}</p>
-          </div>
-          <button
-            onClick={clearCheatAlert}
-            className="px-3 py-1 text-xs bg-rose-800 hover:bg-rose-700 rounded-md text-white font-medium"
-          >
-            Đã hiểu
-          </button>
-        </div>
-      )}
-
+      {/* SUCCESS & ERROR BANNERS */}
       {successBanner && (
         <div
           className={`border-y px-6 py-3 flex items-center justify-between text-sm transition animate-in fade-in slide-in-from-top-2 ${
             successBanner.action === "CHECK_IN"
-              ? "bg-emerald-950/90 border-emerald-500/60 text-emerald-200 shadow-lg shadow-emerald-900/20"
-              : "bg-cyan-950/90 border-cyan-500/60 text-cyan-200 shadow-lg shadow-cyan-900/20"
+              ? "bg-emerald-50 border-emerald-300 text-emerald-900 shadow-sm"
+              : "bg-blue-50 border-blue-300 text-blue-900 shadow-sm"
           }`}
         >
           <div className="flex items-center gap-3">
             <div
               className={`p-1.5 rounded-full ${
-                successBanner.action === "CHECK_IN" ? "bg-emerald-500/20 text-emerald-400" : "bg-cyan-500/20 text-cyan-400"
+                successBanner.action === "CHECK_IN" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
               }`}
             >
               <CheckCircle2 className="h-5 w-5" />
             </div>
             <div>
               <span className="font-bold tracking-wide">{successBanner.title}</span>
-              <span className="mx-2 opacity-60">|</span>
-              <span className="text-xs opacity-95">{successBanner.subtitle}</span>
+              <span className="mx-2 opacity-40">|</span>
+              <span className="text-xs opacity-90">{successBanner.subtitle}</span>
             </div>
           </div>
-          <button onClick={() => setSuccessBanner(null)} className="text-slate-400 hover:text-white transition">
+          <button onClick={() => setSuccessBanner(null)} className="text-gray-400 hover:text-gray-700 transition">
             <XCircle className="h-4 w-4" />
           </button>
         </div>
       )}
 
       {errorMessage && (
-        <div className="bg-amber-950/80 border-y border-amber-500/50 px-6 py-2.5 text-amber-200 flex items-center justify-between text-sm">
+        <div className="bg-amber-50 border-y border-amber-300 px-6 py-2.5 text-amber-900 flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
             <span>{errorMessage}</span>
           </div>
-          <button onClick={() => setErrorMessage(null)} className="text-amber-400 hover:text-white">
+          <button onClick={() => setErrorMessage(null)} className="text-amber-700 hover:text-amber-900">
             <XCircle className="h-4 w-4" />
           </button>
         </div>
@@ -483,20 +504,20 @@ export default function ScanStationPage() {
 
       {/* MAIN TWO-COLUMN BODY */}
       <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto w-full">
-        {/* CỘT TRÁI (6 CỘT): CAMERA SCANNER & ANTI-CHEAT */}
+        {/* CỘT TRÁI (6 CỘT): CAMERA SCANNER & CAMERA SELECTOR */}
         <section className="lg:col-span-6 flex flex-col gap-4">
           {/* CAMERA FEED & LASER SCAN BOX */}
           <div
-            className={`relative rounded-2xl overflow-hidden border-2 bg-slate-900 shadow-2xl aspect-[4/3] flex flex-col items-center justify-center transition-all duration-300 ${
+            className={`relative rounded-2xl overflow-hidden border-2 bg-black shadow-lg aspect-[4/3] flex flex-col items-center justify-center transition-all duration-300 ${
               scanSuccessFlash
-                ? "border-emerald-400 shadow-[0_0_35px_rgba(16,185,129,0.7)]"
-                : "border-slate-800"
+                ? "border-emerald-500 shadow-[0_0_35px_rgba(16,185,129,0.6)]"
+                : "border-gray-300"
             }`}
           >
-            {/* CONTAINER DÀNH RIÊNG CHO HTML5-QRCODE ENGINE (ZXING) */}
+            {/* CONTAINER DÀNH CHO HTML5-QRCODE ENGINE (ZXING) */}
             <div id="interactive-webcam-reader" className="w-full h-full overflow-hidden" />
 
-            {/* TIA LASER ĐỎ CHUYỂN ĐỘNG NẰM NGANG */}
+            {/* TIA LASER ĐỎ CHUYỂN ĐỘNG & 4 GÓC NGẮM QUANG HỌC */}
             <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-6">
               <div className="flex justify-between">
                 <div
@@ -534,13 +555,13 @@ export default function ScanStationPage() {
             </div>
 
             {/* TRẠNG THÁI CAMERA & SÚNG QUÉT */}
-            <div className="absolute top-4 left-4 bg-slate-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-emerald-500/40 flex items-center gap-2 text-xs font-semibold shadow-lg">
+            <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-emerald-500/40 flex items-center gap-2 text-xs font-semibold shadow-lg">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
               <span className="text-emerald-400">CAMERA & SÚNG USB ĐANG SẴN SÀNG</span>
             </div>
 
             {/* HƯỚNG DẪN ĐIỂM DANH */}
-            <div className="absolute bottom-4 inset-x-4 bg-slate-950/90 backdrop-blur-md p-2.5 rounded-xl border border-slate-700/80 text-center">
+            <div className="absolute bottom-4 inset-x-4 bg-black/80 backdrop-blur-md p-2.5 rounded-xl border border-white/20 text-center">
               <div className="text-xs font-semibold text-white flex items-center justify-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-400" />
                 Đưa mã vạch thẻ SV cách camera 15-25cm hoặc bóp cò súng quét USB
@@ -548,40 +569,108 @@ export default function ScanStationPage() {
             </div>
           </div>
 
-
-          {/* SIMULATION BAR: DÀNH CHO BẢO VỆ ĐỒ ÁN / TEST NHANH */}
-          <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800/80">
-            <div className="text-xs font-semibold text-slate-400 flex items-center justify-between mb-2">
-              <span className="flex items-center gap-1">
-                <Sliders className="h-3.5 w-3.5 text-amber-400" />
-                Mô phỏng quét nhanh:
-              </span>
+          {/* ĐIỀU KHIỂN QUÉT, NGUỒN CAMERA & NHẬP MÃ THẺ NHANH */}
+          <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm space-y-3.5">
+            {/* Bộ chọn camera & nút làm mới ống kính */}
+            <div className="flex items-center justify-between gap-2 text-xs border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-1.5 text-gray-700 font-semibold">
+                <Video className="h-4 w-4 text-red-600" />
+                <span>Nguồn Camera:</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedCameraId}
+                  onChange={(e) => setSelectedCameraId(e.target.value)}
+                  className="bg-gray-50 border border-gray-200 text-gray-800 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-red-500 max-w-[200px] truncate"
+                >
+                  {cameras.length > 0 ? (
+                    cameras.map((cam) => (
+                      <option key={cam.id} value={cam.id}>
+                        {cam.label || `Camera ${cam.id.slice(0, 8)}`}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">Camera mặc định</option>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setCameraRestartKey((k) => k + 1)}
+                  className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition"
+                  title="Làm mới lại Camera"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2 text-xs">
-              <button
-                onClick={() => handleBarcodeProcess("2373401010100", "USB_SCANNER")}
-                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-slate-200 transition"
-              >
-                🎓 SV: Nguyễn Thiện Đức (2373401010100)
-              </button>
-              <button
-                onClick={() => handleBarcodeProcess("2174802010708", "USB_SCANNER")}
-                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-slate-200 transition"
-              >
-                🎓 SV: Nguyễn Bảo Thiên (2174802010708)
-              </button>
-              <button
-                onClick={() => handleBarcodeProcess("2374802010490", "USB_SCANNER")}
-                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-slate-200 transition"
-              >
-                🎓 SV: Trần Thái Thuận (2374802010490)
-              </button>
-              <button
-                onClick={() => handleBarcodeProcess("EQ-LAB801-PC01", "USB_SCANNER")}
-                className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-md text-amber-300 transition"
-              >
-                💻 Máy: EQ-LAB801-PC01
-              </button>
+
+            {/* THANH QUÉT / NHẬP MÃ DỰ PHÒNG (Cho thẻ trầy xước hoặc nhập nhanh) */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (manualInput.trim()) {
+                  handleBarcodeProcess(manualInput.trim(), "USB_SCANNER");
+                  setManualInput("");
+                }
+              }}
+              className="space-y-1.5"
+            >
+              <div className="flex items-center justify-between text-[11px] text-gray-500 font-medium">
+                <span className="flex items-center gap-1">
+                  <BarcodeIcon className="h-3.5 w-3.5 text-red-600" />
+                  Nhập mã thẻ / Bắn súng quét trực tiếp:
+                </span>
+                <span className="text-[10px] text-emerald-600 font-semibold">
+                  Súng USB & Camera: Tự động
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Gõ MSSV (VD: 2373401010100) hoặc bấm quét..."
+                  value={manualInput}
+                  onChange={(e) => setManualInput(e.target.value)}
+                  className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2 text-xs font-mono text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:bg-white transition"
+                />
+                <button
+                  type="submit"
+                  disabled={!manualInput.trim() || isProcessing}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5 flex-shrink-0"
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  Quét
+                </button>
+              </div>
+            </form>
+
+            {/* Simulation Bar */}
+            <div className="pt-2 border-t border-gray-100">
+              <div className="text-xs font-semibold text-gray-500 flex items-center justify-between mb-2">
+                <span className="flex items-center gap-1">
+                  <Sliders className="h-3.5 w-3.5 text-gray-600" />
+                  Mô phỏng quét nhanh:
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <button
+                  onClick={() => handleBarcodeProcess("2373401010100", "USB_SCANNER")}
+                  className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-gray-800 font-medium transition"
+                >
+                  🎓 SV: Nguyễn Thiện Đức (2373401010100)
+                </button>
+                <button
+                  onClick={() => handleBarcodeProcess("2174802010708", "USB_SCANNER")}
+                  className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-gray-800 font-medium transition"
+                >
+                  🎓 SV: Nguyễn Bảo Thiên (2174802010708)
+                </button>
+                <button
+                  onClick={() => handleBarcodeProcess("EQ-LAB801-PC01", "USB_SCANNER")}
+                  className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg text-amber-800 font-medium transition"
+                >
+                  💻 Máy: EQ-LAB801-PC01
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -589,11 +678,11 @@ export default function ScanStationPage() {
         {/* CỘT PHẢI (6 CỘT): KẾT QUẢ QUÉT GẦN NHẤT + BẢNG LỊCH SỬ HÔM NAY */}
         <section className="lg:col-span-6 flex flex-col gap-4">
           {/* KẾT QUẢ QUÉT GẦN NHẤT */}
-          <div className="bg-slate-900 rounded-2xl border-2 border-slate-800 p-5 shadow-xl relative overflow-hidden">
-            <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm relative overflow-hidden">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
               <div className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5 text-emerald-400" />
-                <h2 className="text-base font-bold text-white uppercase tracking-wide">
+                <UserCheck className="h-5 w-5 text-emerald-600" />
+                <h2 className="text-base font-bold text-gray-900 uppercase tracking-wide">
                   Kết quả quét vừa thực hiện
                 </h2>
               </div>
@@ -601,8 +690,8 @@ export default function ScanStationPage() {
                 <span
                   className={`text-xs font-bold px-3 py-1 rounded-full uppercase flex items-center gap-1.5 ${
                     lastResult.action === "CHECK_IN"
-                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                      : "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      : "bg-blue-50 text-blue-700 border border-blue-200"
                   }`}
                 >
                   {lastResult.action === "CHECK_IN" ? (
@@ -621,7 +710,7 @@ export default function ScanStationPage() {
             {lastResult ? (
               <div className="flex flex-col sm:flex-row gap-5 items-center">
                 {/* Snapshot Image Preview */}
-                <div className="w-36 h-36 rounded-xl bg-slate-950 border border-slate-700 overflow-hidden flex-shrink-0 relative group">
+                <div className="w-36 h-36 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden flex-shrink-0 relative group">
                   {lastResult.snapshot ? (
                     <img
                       src={lastResult.snapshot}
@@ -629,35 +718,35 @@ export default function ScanStationPage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-500">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                       <Camera className="h-8 w-8 mb-1" />
                       <span className="text-[10px]">No Snapshot</span>
                     </div>
                   )}
-                  <span className="absolute bottom-1 right-1 text-[9px] bg-black/70 text-slate-300 px-1 rounded">
+                  <span className="absolute bottom-1 right-1 text-[9px] bg-black/70 text-white px-1.5 py-0.5 rounded">
                     Snapshot
                   </span>
                 </div>
 
                 {/* Chi tiết sinh viên */}
-                <div className="flex-1 w-full space-y-2 text-sm">
+                <div className="flex-1 w-full space-y-2.5 text-sm">
                   <div>
-                    <h3 className="text-lg font-bold text-white">{lastResult.studentName}</h3>
-                    <div className="text-slate-400 font-mono text-xs">
-                      MSSV: <span className="text-emerald-400 font-bold">{lastResult.studentCode}</span>
+                    <h3 className="text-lg font-bold text-gray-900">{lastResult.studentName}</h3>
+                    <div className="text-gray-500 font-mono text-xs">
+                      MSSV: <span className="text-red-600 font-bold">{lastResult.studentCode}</span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                    <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                      <span className="text-slate-400 block">Giờ Check-in:</span>
-                      <span className="text-emerald-400 font-mono font-bold">
+                    <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-200">
+                      <span className="text-gray-500 block">Giờ Check-in:</span>
+                      <span className="text-emerald-700 font-mono font-bold text-sm">
                         {new Date(lastResult.checkInTime).toLocaleTimeString("vi-VN")}
                       </span>
                     </div>
-                    <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                      <span className="text-slate-400 block">Giờ Check-out:</span>
-                      <span className="text-cyan-400 font-mono font-bold">
+                    <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-200">
+                      <span className="text-gray-500 block">Giờ Check-out:</span>
+                      <span className="text-blue-700 font-mono font-bold text-sm">
                         {lastResult.checkOutTime
                           ? new Date(lastResult.checkOutTime).toLocaleTimeString("vi-VN")
                           : "Đang ở phòng Lab"}
@@ -666,23 +755,24 @@ export default function ScanStationPage() {
                   </div>
 
                   {lastResult.durationText && (
-                    <div className="text-xs text-cyan-300 font-mono bg-cyan-950/40 p-2 rounded border border-cyan-800/50">
-                      ⏱ Tổng thời gian có mặt: <span className="font-bold">{lastResult.durationText}</span>
+                    <div className="text-xs text-blue-900 font-mono bg-blue-50 p-2.5 rounded-lg border border-blue-200 flex items-center justify-between">
+                      <span className="font-semibold text-blue-700">⏱ Thời gian có mặt:</span>
+                      <span className="font-bold text-blue-900 text-sm">{lastResult.durationText}</span>
                     </div>
                   )}
 
-                  <div className="text-xs text-emerald-400/90 bg-emerald-950/40 p-2 rounded border border-emerald-900/50">
+                  <div className="text-xs text-emerald-800 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
                     {lastResult.message}
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="py-12 flex flex-col items-center justify-center text-center text-slate-500">
-                <div className="w-14 h-14 rounded-full bg-slate-800/60 flex items-center justify-center mb-3">
-                  <UserCheck className="h-7 w-7 text-slate-400" />
+              <div className="py-12 flex flex-col items-center justify-center text-center text-gray-400">
+                <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                  <UserCheck className="h-7 w-7 text-gray-400" />
                 </div>
-                <div className="text-sm font-medium text-slate-300">Chưa có lượt quét nào</div>
-                <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                <div className="text-sm font-semibold text-gray-700">Chưa có lượt quét nào</div>
+                <p className="text-xs text-gray-400 mt-1 max-w-xs">
                   Đưa thẻ sinh viên vào trước camera hoặc bóp cò súng quét để Check-in / Check-out.
                 </p>
               </div>
@@ -690,24 +780,24 @@ export default function ScanStationPage() {
           </div>
 
           {/* NHẬT KÝ ĐIỂM DANH HÔM NAY */}
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5 flex-1 flex flex-col min-h-[300px]">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 flex-1 flex flex-col min-h-[300px] shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
-                <History className="h-4 w-4 text-emerald-400" />
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2">
+                <History className="h-4 w-4 text-emerald-600" />
                 Nhật ký điểm danh vào - ra hôm nay
               </h3>
               <button
                 onClick={fetchStationData}
-                className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition"
+                className="text-xs text-gray-500 hover:text-gray-900 flex items-center gap-1 transition"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 Làm mới
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[340px] rounded-lg border border-slate-800 bg-slate-950/50">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0 border-b border-slate-800">
+            <div className="flex-1 overflow-y-auto max-h-[340px] rounded-lg border border-gray-200 bg-white">
+              <table className="w-full text-left text-xs text-gray-700">
+                <thead className="bg-gray-50 text-gray-600 uppercase text-[10px] sticky top-0 border-b border-gray-200">
                   <tr>
                     <th className="py-2.5 px-3">Sinh viên</th>
                     <th className="py-2.5 px-3">Giờ Check-in</th>
@@ -716,33 +806,33 @@ export default function ScanStationPage() {
                     <th className="py-2.5 px-3 text-right">Trạng thái</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 font-mono">
+                <tbody className="divide-y divide-gray-100 font-mono">
                   {recentLogs.length > 0 ? (
                     recentLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-slate-800/40 transition">
-                        <td className="py-2 px-3 font-sans">
-                          <div className="font-semibold text-white">{log.studentName}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">{log.studentCode}</div>
+                      <tr key={log.id} className="hover:bg-gray-50/80 transition">
+                        <td className="py-2.5 px-3 font-sans">
+                          <div className="font-semibold text-gray-900">{log.studentName}</div>
+                          <div className="text-[10px] text-gray-500 font-mono">{log.studentCode}</div>
                         </td>
-                        <td className="py-2 px-3 text-emerald-400 font-semibold">
+                        <td className="py-2.5 px-3 text-emerald-700 font-semibold">
                           {log.checkInTime
                             ? new Date(log.checkInTime).toLocaleTimeString("vi-VN")
                             : "--:--"}
                         </td>
-                        <td className="py-2 px-3 text-cyan-400 font-semibold">
+                        <td className="py-2.5 px-3 text-blue-700 font-semibold">
                           {log.checkOutTime
                             ? new Date(log.checkOutTime).toLocaleTimeString("vi-VN")
                             : "Đang trong Lab"}
                         </td>
-                        <td className="py-2 px-3 text-cyan-300 font-mono font-medium">
+                        <td className="py-2.5 px-3 text-gray-900 font-bold">
                           {formatFriendlyDuration(log.checkInTime, log.checkOutTime)}
                         </td>
-                        <td className="py-2 px-3 text-right font-sans">
+                        <td className="py-2.5 px-3 text-right font-sans">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                               log.checkOutTime
-                                ? "bg-cyan-500/20 text-cyan-300"
-                                : "bg-emerald-500/20 text-emerald-300"
+                                ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                : "bg-emerald-50 text-emerald-700 border border-emerald-200 animate-pulse"
                             }`}
                           >
                             {log.checkOutTime ? "Đã Check-out" : "Đang có mặt"}
@@ -752,7 +842,7 @@ export default function ScanStationPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-500 font-sans">
+                      <td colSpan={5} className="py-8 text-center text-gray-400 font-sans">
                         Chưa có sinh viên nào check-in hôm nay
                       </td>
                     </tr>
@@ -766,121 +856,147 @@ export default function ScanStationPage() {
 
       {/* MODAL BÁO CÁO SỰ CỐ THIẾT BỊ PHÒNG LAB KHI QUÉT MÃ EQ- */}
       {equipmentModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-slate-900 border-2 border-amber-500/60 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white border border-gray-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
             <button
               onClick={() => setEquipmentModal(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
             >
               <XCircle className="h-6 w-6" />
             </button>
 
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-3 mb-4">
-              <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+            <div className="flex items-center gap-3 border-b border-gray-100 pb-3 mb-4">
+              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
                 <Laptop className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">THIẾT BỊ PHÒNG LAB ĐƯỢC NHẬN DIỆN</h3>
-                <p className="text-xs text-amber-400 font-mono">
+                <h3 className="text-base font-bold text-gray-900">THIẾT BỊ PHÒNG LAB ĐƯỢC NHẬN DIỆN</h3>
+                <p className="text-xs text-amber-700 font-mono font-semibold">
                   Mã vạch: {equipmentModal.equipmentBarcode}
                 </p>
               </div>
             </div>
 
-            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 mb-4 text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Tên thiết bị:</span>
-                <span className="text-white font-semibold">{equipmentModal.equipmentName}</span>
+            {incidentSuccess && (
+              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                {incidentSuccess}
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Vị trí:</span>
-                <span className="text-slate-200">{equipmentModal.labName}</span>
+            )}
+
+            <div className="space-y-3 text-xs mb-5">
+              <div className="grid grid-cols-2 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                <div>
+                  <span className="text-gray-500 block">Tên thiết bị:</span>
+                  <span className="font-bold text-gray-900">{equipmentModal.equipmentName}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Vị trí:</span>
+                  <span className="font-semibold text-gray-800">
+                    {equipmentModal.labName} ({equipmentModal.building})
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Loại máy:</span>
+                  <span className="font-semibold text-gray-800">{equipmentModal.category}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block">Trạng thái hiện tại:</span>
+                  <span
+                    className={`font-bold ${
+                      equipmentModal.status === "GOOD"
+                        ? "text-emerald-700"
+                        : equipmentModal.status === "BROKEN"
+                        ? "text-rose-700"
+                        : "text-amber-700"
+                    }`}
+                  >
+                    ● {equipmentModal.status}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Cấu hình:</span>
-                <span className="text-slate-300">{equipmentModal.specifications || "Chuẩn máy trạm VLU"}</span>
-              </div>
+
+              {equipmentModal.specifications && (
+                <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-200 text-[11px]">
+                  <span className="text-gray-500 block font-semibold">Cấu hình phần cứng:</span>
+                  <span className="text-gray-700">{equipmentModal.specifications}</span>
+                </div>
+              )}
             </div>
 
-            {incidentSuccess ? (
-              <div className="p-4 bg-emerald-950/80 border border-emerald-500/50 rounded-xl text-emerald-200 text-sm flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                <span>{incidentSuccess}</span>
+            {/* FORM BÁO HỎNG NHANH */}
+            <form onSubmit={handleSubmitIncident} className="space-y-3">
+              <div className="font-bold text-xs text-gray-900 uppercase flex items-center gap-1.5">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                Báo cáo sự cố cho máy này:
               </div>
-            ) : (
-              <form onSubmit={handleSubmitIncident} className="space-y-3.5">
-                <div className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  Tạo nhanh Phiếu Báo hỏng (Incident Report - 5 Giây):
-                </div>
 
+              <div>
+                <label className="text-xs text-gray-600 block mb-1">Mô tả tóm tắt sự cố *</label>
+                <input
+                  type="text"
+                  required
+                  value={incidentTitle}
+                  onChange={(e) => setIncidentTitle(e.target.value)}
+                  placeholder="VD: Không lên nguồn, màn hình sọc, kẹt phím..."
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Mô tả sự cố / Lỗi gặp phải:</label>
+                  <label className="text-xs text-gray-600 block mb-1">Mức độ nghiêm trọng</label>
+                  <select
+                    value={incidentSeverity}
+                    onChange={(e: any) => setIncidentSeverity(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-2 text-xs text-gray-900 focus:outline-none focus:border-red-500"
+                  >
+                    <option value="LOW">Thấp (Chờ được)</option>
+                    <option value="MEDIUM">Trung bình</option>
+                    <option value="HIGH">Cao (Cần gấp)</option>
+                    <option value="CRITICAL">Khẩn cấp</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 block mb-1">Người báo cáo (MSSV)</label>
                   <input
                     type="text"
-                    required
-                    placeholder="VD: Không lên màn hình, bàn phím liệt phím Enter..."
-                    value={incidentTitle}
-                    onChange={(e) => setIncidentTitle(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    disabled
+                    value={lastResult?.studentCode || "2373401010100"}
+                    className="w-full bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-500 font-mono"
                   />
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Mức độ nghiêm trọng:</label>
-                    <select
-                      value={incidentSeverity}
-                      onChange={(e) => setIncidentSeverity(e.target.value as any)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                    >
-                      <option value="LOW">Thấp (Chưa ảnh hưởng ca học)</option>
-                      <option value="MEDIUM">Vừa (Hỏng phụ kiện, chuột/phím)</option>
-                      <option value="HIGH">Nghiêm trọng (Hỏng phần cứng máy)</option>
-                      <option value="CRITICAL">Khẩn cấp (Cháy nổ/Chập điện)</option>
-                    </select>
-                  </div>
+              <div>
+                <label className="text-xs text-gray-600 block mb-1">Chi tiết thêm (tùy chọn)</label>
+                <textarea
+                  rows={2}
+                  value={incidentDesc}
+                  onChange={(e) => setIncidentDesc(e.target.value)}
+                  placeholder="Ghi chú thêm về hiện tượng lỗi..."
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500"
+                />
+              </div>
 
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Người trực ghi nhận:</label>
-                    <input
-                      type="text"
-                      disabled
-                      value={lastResult?.studentName || "Sinh viên trực ca"}
-                      className="w-full bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-400"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Ghi chú bổ sung (Tùy chọn):</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Ví dụ: Đã thử đổi dây nguồn nhưng quạt nguồn không quay..."
-                    value={incidentDesc}
-                    onChange={(e) => setIncidentDesc(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setEquipmentModal(null)}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold"
-                  >
-                    Đóng
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={incidentSubmitting}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-amber-600/30"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                    {incidentSubmitting ? "Đang gửi..." : "Gửi Báo hỏng (5s)"}
-                  </button>
-                </div>
-              </form>
-            )}
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setEquipmentModal(null)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold"
+                >
+                  Đóng
+                </button>
+                <button
+                  type="submit"
+                  disabled={incidentSubmitting}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-600/20 disabled:opacity-50"
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  {incidentSubmitting ? "Đang gửi..." : "Gửi phiếu báo sự cố"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

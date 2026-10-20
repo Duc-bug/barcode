@@ -23,13 +23,8 @@ import {
   AlertCircle,
   TrendingUp,
   Download,
-  Calendar,
   Search,
   Filter,
-  CheckCircle2,
-  LogIn,
-  LogOut,
-  Laptop,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -72,7 +67,7 @@ export default function DashboardPage() {
         : "--:--",
       "Giờ Check-out": log.checkOutTime
         ? new Date(log.checkOutTime).toLocaleTimeString("vi-VN")
-        : "--:--",
+        : "Đang trong Lab",
       "Thời gian có mặt": log.durationText || "--",
       "Số giờ quy đổi": log.totalHours || 0,
       "Trạng thái":
@@ -81,7 +76,7 @@ export default function DashboardPage() {
           : log.attendanceStatus === "LATE"
           ? "Đi trễ"
           : log.attendanceStatus,
-      "Phương thức quét": log.scanMethod,
+      "Phương thức quét": log.scanMethod === "WEBCAM" ? "Webcam AI" : "Súng quét USB",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -91,15 +86,16 @@ export default function DashboardPage() {
     // Tự động điều chỉnh độ rộng cột
     worksheet["!cols"] = [
       { wch: 6 },
-      { wch: 22 },
+      { wch: 24 },
       { wch: 16 },
       { wch: 14 },
-      { wch: 14 },
+      { wch: 16 },
       { wch: 28 },
       { wch: 14 },
       { wch: 14 },
+      { wch: 20 },
       { wch: 14 },
-      { wch: 12 },
+      { wch: 14 },
       { wch: 16 },
     ];
 
@@ -116,31 +112,32 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-6">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* HEADER */}
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-5">
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition"
+              className="p-2.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-100 text-gray-700 shadow-sm transition"
+              title="Về Trang Chủ"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                <FileSpreadsheet className="h-6 w-6 text-emerald-400" />
+              <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <FileSpreadsheet className="h-6 w-6 text-emerald-600" />
                 THỐNG KÊ GIỜ TRỰC & XUẤT BẢNG CHẤM CÔNG
               </h1>
-              <p className="text-xs text-slate-400">
-                Khoa Công nghệ Thông tin - Trường Đại học Văn Lang • Thống kê hiệu suất trực phòng Lab
+              <p className="text-xs text-gray-500">
+                Thống kê số giờ sinh viên có mặt tại phòng Lab và xuất bảng tính Excel
               </p>
             </div>
           </div>
 
           <button
             onClick={handleExportExcel}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition"
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition transform hover:-translate-y-0.5 active:translate-y-0"
           >
             <Download className="h-4 w-4" />
             Xuất Excel Bảng Chấm Công (.xlsx)
@@ -149,50 +146,50 @@ export default function DashboardPage() {
 
         {/* 4 THẺ THỐNG KÊ (KPI METRICS) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
             <div>
-              <div className="text-xs text-slate-400">Tổng giờ trực đã tích lũy</div>
-              <div className="text-2xl font-bold text-emerald-400 font-mono mt-1">
+              <div className="text-xs font-semibold text-gray-500 uppercase">Tổng giờ trực tích lũy</div>
+              <div className="text-2xl font-bold text-emerald-600 font-mono mt-1">
                 {data?.stats?.totalHours || 0} hrs
               </div>
             </div>
-            <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-400">
+            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
               <Clock className="h-6 w-6" />
             </div>
           </div>
 
-          <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
             <div>
-              <div className="text-xs text-slate-400">Tổng số lượt quét điểm danh</div>
-              <div className="text-2xl font-bold text-white font-mono mt-1">
+              <div className="text-xs font-semibold text-gray-500 uppercase">Tổng số lượt quét</div>
+              <div className="text-2xl font-bold text-gray-900 font-mono mt-1">
                 {data?.stats?.totalLogs || 0}
               </div>
             </div>
-            <div className="p-3 rounded-lg bg-blue-500/10 text-blue-400">
+            <div className="p-3 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
               <UserCheck className="h-6 w-6" />
             </div>
           </div>
 
-          <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
             <div>
-              <div className="text-xs text-slate-400">Lượt check-in đúng giờ</div>
-              <div className="text-2xl font-bold text-emerald-400 font-mono mt-1">
+              <div className="text-xs font-semibold text-gray-500 uppercase">Lượt check-in đúng giờ</div>
+              <div className="text-2xl font-bold text-emerald-600 font-mono mt-1">
                 {data?.stats?.onTimeCount || 0}
               </div>
             </div>
-            <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-400">
+            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
               <TrendingUp className="h-6 w-6" />
             </div>
           </div>
 
-          <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
             <div>
-              <div className="text-xs text-slate-400">Sự cố máy tính đang mở</div>
-              <div className="text-2xl font-bold text-rose-400 font-mono mt-1">
+              <div className="text-xs font-semibold text-gray-500 uppercase">Sự cố máy tính đang mở</div>
+              <div className="text-2xl font-bold text-rose-600 font-mono mt-1">
                 {data?.stats?.openIncidents || 0}
               </div>
             </div>
-            <div className="p-3 rounded-lg bg-rose-500/10 text-rose-400">
+            <div className="p-3 rounded-xl bg-rose-50 text-rose-600 border border-rose-100">
               <AlertCircle className="h-6 w-6" />
             </div>
           </div>
@@ -200,29 +197,36 @@ export default function DashboardPage() {
 
         {/* BIỂU ĐỒ RECHARTS (2 CỘT) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Cột trái (8 cột): Biểu đồ cột tổng số giờ trực theo sinh viên */}
-          <div className="lg:col-span-8 bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col">
-            <h3 className="text-sm font-bold text-white mb-4">
+          {/* Cột trái: Biểu đồ cột tổng số giờ trực theo sinh viên */}
+          <div className="lg:col-span-8 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col">
+            <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wide">
               Biểu đồ: Tổng số giờ trực của từng sinh viên (Hours)
             </h3>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data?.studentStats || []}>
-                  <XAxis dataKey="fullName" stroke="#94a3b8" fontSize={11} />
-                  <YAxis stroke="#94a3b8" fontSize={11} />
+                  <XAxis dataKey="fullName" stroke="#64748b" fontSize={11} />
+                  <YAxis stroke="#64748b" fontSize={11} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155" }}
-                    labelStyle={{ color: "#fff", fontWeight: "bold" }}
+                    contentStyle={{
+                      backgroundColor: "#ffffff",
+                      borderColor: "#e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    }}
+                    labelStyle={{ color: "#0f172a", fontWeight: "bold" }}
                   />
-                  <Bar dataKey="totalHours" fill="#ef4444" radius={[6, 6, 0, 0]} name="Số giờ trực" />
+                  <Bar dataKey="totalHours" fill="#dc2626" radius={[6, 6, 0, 0]} name="Số giờ trực" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Cột phải (4 cột): Tỷ lệ Đúng giờ vs Đi trễ */}
-          <div className="lg:col-span-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col items-center">
-            <h3 className="text-sm font-bold text-white mb-2 self-start">Tỷ lệ Kỷ luật Điểm danh</h3>
+          {/* Cột phải: Tỷ lệ Đúng giờ vs Đi trễ */}
+          <div className="lg:col-span-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center">
+            <h3 className="text-sm font-bold text-gray-900 mb-2 self-start uppercase tracking-wide">
+              Tỷ lệ Kỷ luật Điểm danh
+            </h3>
             <div className="h-60 w-full flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -240,7 +244,11 @@ export default function DashboardPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155" }}
+                    contentStyle={{
+                      backgroundColor: "#ffffff",
+                      borderColor: "#e2e8f0",
+                      borderRadius: "8px",
+                    }}
                   />
                   <Legend verticalAlign="bottom" height={36} />
                 </PieChart>
@@ -250,13 +258,13 @@ export default function DashboardPage() {
         </div>
 
         {/* BẢNG TỔNG HỢP THEO SINH VIÊN */}
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wide mb-3">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">
             Bảng thống kê ca trực theo Sinh viên
           </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="w-full text-left text-xs text-gray-700">
+              <thead className="bg-gray-50 text-gray-600 uppercase text-[10px] border-b border-gray-200">
                 <tr>
                   <th className="py-2.5 px-3">Họ và Tên SV</th>
                   <th className="py-2.5 px-3">MSSV</th>
@@ -267,18 +275,18 @@ export default function DashboardPage() {
                   <th className="py-2.5 px-3 text-right">Tổng giờ trực</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 font-mono">
+              <tbody className="divide-y divide-gray-100 font-mono">
                 {data?.studentStats?.map((sv: any) => (
-                  <tr key={sv.id} className="hover:bg-slate-850">
-                    <td className="py-2.5 px-3 font-sans font-semibold text-white">
+                  <tr key={sv.id} className="hover:bg-gray-50">
+                    <td className="py-2.5 px-3 font-sans font-semibold text-gray-900">
                       {sv.fullName}
                     </td>
-                    <td className="py-2.5 px-3 text-slate-400">{sv.studentCode}</td>
-                    <td className="py-2.5 px-3 text-slate-300">{sv.totalShifts}</td>
-                    <td className="py-2.5 px-3 text-slate-300">{sv.completedShifts}</td>
-                    <td className="py-2.5 px-3 text-emerald-400">{sv.onTime}</td>
-                    <td className="py-2.5 px-3 text-amber-400">{sv.late}</td>
-                    <td className="py-2.5 px-3 text-right font-bold text-red-400">
+                    <td className="py-2.5 px-3 text-gray-500">{sv.studentCode}</td>
+                    <td className="py-2.5 px-3 text-gray-700">{sv.totalShifts}</td>
+                    <td className="py-2.5 px-3 text-gray-700">{sv.completedShifts}</td>
+                    <td className="py-2.5 px-3 text-emerald-600 font-semibold">{sv.onTime}</td>
+                    <td className="py-2.5 px-3 text-amber-600 font-semibold">{sv.late}</td>
+                    <td className="py-2.5 px-3 text-right font-bold text-red-600">
                       {sv.totalHours} hrs
                     </td>
                   </tr>
@@ -289,14 +297,14 @@ export default function DashboardPage() {
         </div>
 
         {/* BẢNG CHI TIẾT TỪNG LƯỢT ĐIỂM DANH CHECK-IN / CHECK-OUT */}
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-3">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-3">
             <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2">
-                <Clock className="h-4 w-4 text-emerald-400" />
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide flex items-center gap-2">
+                <Clock className="h-4 w-4 text-emerald-600" />
                 Nhật ký Chi tiết Các lượt Điểm danh Vào - Ra Phòng Lab
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-gray-500">
                 Hiển thị thời gian check-in, check-out và tổng thời lượng có mặt chính xác
               </p>
             </div>
@@ -304,40 +312,34 @@ export default function DashboardPage() {
             {/* Tìm kiếm & Lọc trạng thái */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative w-56">
-                <Search className="h-3.5 w-3.5 text-slate-500 absolute left-2.5 top-2.5" />
+                <Search className="h-3.5 w-3.5 text-gray-400 absolute left-2.5 top-2.5" />
                 <input
                   type="text"
                   placeholder="Tìm SV, MSSV, phòng..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500"
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs">
-                <Filter className="h-3.5 w-3.5 text-slate-400" />
+              <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-300 text-xs">
+                <Filter className="h-3.5 w-3.5 text-gray-500" />
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-transparent text-white font-medium focus:outline-none cursor-pointer"
+                  className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer"
                 >
-                  <option value="ALL" className="bg-slate-900">
-                    Tất cả trạng thái
-                  </option>
-                  <option value="IN_LAB" className="bg-slate-900">
-                    Đang có mặt trong Lab
-                  </option>
-                  <option value="CHECKED_OUT" className="bg-slate-900">
-                    Đã Check-out
-                  </option>
+                  <option value="ALL">Tất cả trạng thái</option>
+                  <option value="IN_LAB">Đang có mặt trong Lab</option>
+                  <option value="CHECKED_OUT">Đã Check-out</option>
                 </select>
               </div>
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-800">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="w-full text-left text-xs text-gray-700">
+              <thead className="bg-gray-50 text-gray-600 uppercase text-[10px] border-b border-gray-200">
                 <tr>
                   <th className="py-2.5 px-3">STT</th>
                   <th className="py-2.5 px-3">Sinh viên</th>
@@ -350,7 +352,7 @@ export default function DashboardPage() {
                   <th className="py-2.5 px-3 text-right">Trạng thái</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 font-mono">
+              <tbody className="divide-y divide-gray-100 font-mono">
                 {data?.allLogs
                   ?.filter((log: any) => {
                     const matchesSearch =
@@ -366,40 +368,40 @@ export default function DashboardPage() {
                     return matchesSearch && matchesStatus;
                   })
                   .map((log: any, idx: number) => (
-                    <tr key={log.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-2.5 px-3 text-slate-500">{idx + 1}</td>
+                    <tr key={log.id} className="hover:bg-gray-50/80 transition">
+                      <td className="py-2.5 px-3 text-gray-400">{idx + 1}</td>
                       <td className="py-2.5 px-3 font-sans">
-                        <div className="font-semibold text-white">{log.studentName}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">{log.studentCode}</div>
+                        <div className="font-semibold text-gray-900">{log.studentName}</div>
+                        <div className="text-[10px] text-gray-500 font-mono">{log.studentCode}</div>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-400">
+                      <td className="py-2.5 px-3 text-gray-500">
                         {new Date(log.dutyDate).toLocaleDateString("vi-VN")}
                       </td>
-                      <td className="py-2.5 px-3 text-emerald-400 font-semibold">
+                      <td className="py-2.5 px-3 text-emerald-700 font-semibold">
                         {log.checkInTime
                           ? new Date(log.checkInTime).toLocaleTimeString("vi-VN")
                           : "--:--"}
                       </td>
-                      <td className="py-2.5 px-3 text-cyan-400 font-semibold">
+                      <td className="py-2.5 px-3 text-blue-700 font-semibold">
                         {log.checkOutTime
                           ? new Date(log.checkOutTime).toLocaleTimeString("vi-VN")
                           : "Đang trong Lab"}
                       </td>
-                      <td className="py-2.5 px-3 text-cyan-300 font-bold">
+                      <td className="py-2.5 px-3 text-blue-900 font-bold">
                         {log.durationText || "--"}
                       </td>
-                      <td className="py-2.5 px-3 text-slate-300 font-sans">
+                      <td className="py-2.5 px-3 text-gray-700 font-sans">
                         {log.labName}
                       </td>
-                      <td className="py-2.5 px-3 text-slate-400 text-[11px] font-sans">
+                      <td className="py-2.5 px-3 text-gray-500 text-[11px] font-sans">
                         {log.scanMethod === "WEBCAM" ? "Webcam AI" : "Súng quét USB"}
                       </td>
                       <td className="py-2.5 px-3 text-right font-sans">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                             log.checkOutTime
-                              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                              : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 animate-pulse"
+                              ? "bg-blue-50 text-blue-700 border border-blue-200"
+                              : "bg-emerald-50 text-emerald-700 border border-emerald-200 animate-pulse"
                           }`}
                         >
                           {log.checkOutTime ? "Đã Check-out" : "Đang có mặt"}

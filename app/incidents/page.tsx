@@ -80,23 +80,24 @@ export default function IncidentsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-6">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* HEADER */}
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-5">
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition"
+              className="p-2.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-100 text-gray-700 shadow-sm transition"
+              title="Về Trang Chủ"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                <AlertTriangle className="h-6 w-6 text-rose-500" />
+              <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <AlertTriangle className="h-6 w-6 text-rose-600" />
                 QUẢN LÝ SỰ CỐ & BẢO TRÌ THIẾT BỊ PHÒNG LAB
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-gray-500">
                 Phiếu sự cố được ghi nhận tự động bằng Smart Barcode Router tại Trạm Quét Kiosk
               </p>
             </div>
@@ -107,54 +108,54 @@ export default function IncidentsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div
             onClick={() => setStatusFilter("ALL")}
-            className={`p-4 rounded-xl border transition cursor-pointer ${
+            className={`p-4 rounded-xl border transition cursor-pointer shadow-sm ${
               statusFilter === "ALL"
-                ? "bg-slate-800 border-slate-600 shadow-md"
-                : "bg-slate-900 border-slate-800 hover:bg-slate-850"
+                ? "bg-white border-gray-400 ring-2 ring-gray-300"
+                : "bg-white border-gray-200 hover:border-gray-300"
             }`}
           >
-            <div className="text-xs text-slate-400">Tổng phiếu sự cố</div>
-            <div className="text-2xl font-bold text-white font-mono mt-1">{incidents.length}</div>
+            <div className="text-xs font-semibold text-gray-500 uppercase">Tổng phiếu sự cố</div>
+            <div className="text-2xl font-bold text-gray-900 font-mono mt-1">{incidents.length}</div>
           </div>
 
           <div
             onClick={() => setStatusFilter("OPEN")}
-            className={`p-4 rounded-xl border transition cursor-pointer ${
+            className={`p-4 rounded-xl border transition cursor-pointer shadow-sm ${
               statusFilter === "OPEN"
-                ? "bg-rose-950/60 border-rose-500 shadow-md shadow-rose-900/30"
-                : "bg-slate-900 border-slate-800 hover:bg-slate-850"
+                ? "bg-rose-50 border-rose-400 ring-2 ring-rose-200"
+                : "bg-white border-gray-200 hover:border-rose-300"
             }`}
           >
-            <div className="text-xs text-rose-300">Chờ xử lý (OPEN)</div>
-            <div className="text-2xl font-bold text-rose-400 font-mono mt-1">
+            <div className="text-xs font-semibold text-rose-700 uppercase">Chờ xử lý (OPEN)</div>
+            <div className="text-2xl font-bold text-rose-600 font-mono mt-1">
               {incidents.filter((i) => i.incidentStatus === "OPEN").length}
             </div>
           </div>
 
           <div
             onClick={() => setStatusFilter("IN_PROGRESS")}
-            className={`p-4 rounded-xl border transition cursor-pointer ${
+            className={`p-4 rounded-xl border transition cursor-pointer shadow-sm ${
               statusFilter === "IN_PROGRESS"
-                ? "bg-amber-950/60 border-amber-500 shadow-md shadow-amber-900/30"
-                : "bg-slate-900 border-slate-800 hover:bg-slate-850"
+                ? "bg-amber-50 border-amber-400 ring-2 ring-amber-200"
+                : "bg-white border-gray-200 hover:border-amber-300"
             }`}
           >
-            <div className="text-xs text-amber-300">Đang sửa chữa</div>
-            <div className="text-2xl font-bold text-amber-400 font-mono mt-1">
+            <div className="text-xs font-semibold text-amber-700 uppercase">Đang sửa chữa</div>
+            <div className="text-2xl font-bold text-amber-600 font-mono mt-1">
               {incidents.filter((i) => i.incidentStatus === "IN_PROGRESS").length}
             </div>
           </div>
 
           <div
             onClick={() => setStatusFilter("RESOLVED")}
-            className={`p-4 rounded-xl border transition cursor-pointer ${
+            className={`p-4 rounded-xl border transition cursor-pointer shadow-sm ${
               statusFilter === "RESOLVED"
-                ? "bg-emerald-950/60 border-emerald-500 shadow-md shadow-emerald-900/30"
-                : "bg-slate-900 border-slate-800 hover:bg-slate-850"
+                ? "bg-emerald-50 border-emerald-400 ring-2 ring-emerald-200"
+                : "bg-white border-gray-200 hover:border-emerald-300"
             }`}
           >
-            <div className="text-xs text-emerald-300">Đã khắc phục</div>
-            <div className="text-2xl font-bold text-emerald-400 font-mono mt-1">
+            <div className="text-xs font-semibold text-emerald-700 uppercase">Đã khắc phục</div>
+            <div className="text-2xl font-bold text-emerald-600 font-mono mt-1">
               {incidents.filter((i) => i.incidentStatus === "RESOLVED").length}
             </div>
           </div>
@@ -164,35 +165,27 @@ export default function IncidentsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-[280px]">
             <div className="relative flex-1">
-              <Search className="h-4 w-4 text-slate-500 absolute left-3 top-2.5" />
+              <Search className="h-4 w-4 text-gray-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder="Tìm theo tiêu đề lỗi hoặc mã vạch máy..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                className="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-4 py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 shadow-sm"
               />
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-800 text-xs">
-              <Filter className="h-3.5 w-3.5 text-slate-400" />
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-300 text-xs shadow-sm">
+              <Filter className="h-3.5 w-3.5 text-gray-500" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-white font-medium focus:outline-none cursor-pointer"
+                className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer"
               >
-                <option value="ALL" className="bg-slate-900">
-                  Tất cả trạng thái
-                </option>
-                <option value="OPEN" className="bg-slate-900">
-                  Chờ xử lý (OPEN)
-                </option>
-                <option value="IN_PROGRESS" className="bg-slate-900">
-                  Đang sửa chữa
-                </option>
-                <option value="RESOLVED" className="bg-slate-900">
-                  Đã khắc phục
-                </option>
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="OPEN">Chờ xử lý (OPEN)</option>
+                <option value="IN_PROGRESS">Đang sửa chữa</option>
+                <option value="RESOLVED">Đã khắc phục</option>
               </select>
             </div>
           </div>
@@ -203,95 +196,89 @@ export default function IncidentsPage() {
           {filteredIncidents.map((inc) => (
             <div
               key={inc.id}
-              className="bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-3.5 shadow-lg flex flex-col justify-between"
+              className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3.5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase ${
                       inc.severity === "CRITICAL"
-                        ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                        ? "bg-rose-50 text-rose-700 border border-rose-200"
                         : inc.severity === "HIGH"
-                        ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                        : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                        : "bg-blue-50 text-blue-700 border border-blue-200"
                     }`}
                   >
                     Mức độ: {inc.severity}
                   </span>
 
                   <span
-                    className={`text-xs font-semibold ${
-                      inc.incidentStatus === "RESOLVED"
-                        ? "text-emerald-400"
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      inc.incidentStatus === "OPEN"
+                        ? "bg-rose-100 text-rose-800"
                         : inc.incidentStatus === "IN_PROGRESS"
-                        ? "text-cyan-400"
-                        : "text-rose-400"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-emerald-100 text-emerald-800"
                     }`}
                   >
-                    ● {inc.incidentStatus}
+                    {inc.incidentStatus === "OPEN"
+                      ? "Chờ tiếp nhận"
+                      : inc.incidentStatus === "IN_PROGRESS"
+                      ? "Đang sửa"
+                      : "Đã khắc phục"}
                   </span>
                 </div>
 
-                <h3 className="text-sm font-bold text-white">{inc.title}</h3>
+                <h3 className="font-bold text-gray-900 text-base leading-snug">{inc.title}</h3>
+
                 {inc.description && (
-                  <p className="text-xs text-slate-400 leading-relaxed bg-slate-950 p-2.5 rounded-lg border border-slate-850">
-                    {inc.description}
-                  </p>
+                  <p className="text-xs text-gray-600 line-clamp-2">{inc.description}</p>
                 )}
-              </div>
 
-              {/* Thông tin máy & người báo */}
-              <div className="space-y-1.5 pt-2 border-t border-slate-800 text-xs">
-                <div className="flex items-center justify-between text-slate-300">
-                  <span className="text-slate-500 flex items-center gap-1">
-                    <Laptop className="h-3.5 w-3.5" />
-                    Thiết bị:
-                  </span>
-                  <span className="font-mono text-amber-400 font-semibold">
-                    {inc.equipment.equipmentBarcode}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-slate-300">
-                  <span className="text-slate-500 flex items-center gap-1">
-                    <User className="h-3.5 w-3.5" />
-                    Người báo:
-                  </span>
-                  <span>{inc.reportedBy.fullName}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                  <span>Thời gian:</span>
-                  <span>{new Date(inc.createdAt).toLocaleString("vi-VN")}</span>
+                <div className="pt-2 text-xs space-y-1.5 text-gray-500 border-t border-gray-100">
+                  <div className="flex items-center gap-1.5 font-mono text-gray-700">
+                    <Laptop className="h-3.5 w-3.5 text-gray-400" />
+                    <span>
+                      {inc.equipment.equipmentName} ({inc.equipment.equipmentBarcode})
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5 text-gray-400" />
+                    <span>Báo bởi: {inc.reportedBy?.fullName || "Sinh viên trực Lab"}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-gray-400" />
+                    <span>{new Date(inc.createdAt).toLocaleString("vi-VN")}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Nút cập nhật trạng thái sửa chữa */}
-              <div className="pt-2 flex items-center gap-2">
-                {inc.incidentStatus !== "RESOLVED" ? (
-                  <>
-                    <button
-                      onClick={() => handleUpdateStatus(inc.id, "IN_PROGRESS")}
-                      className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg text-xs font-semibold transition"
-                    >
-                      Đang sửa
-                    </button>
+              {/* ACTION BUTTONS */}
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-1.5">
+                  {inc.incidentStatus !== "RESOLVED" && (
                     <button
                       onClick={() => handleUpdateStatus(inc.id, "RESOLVED")}
-                      className="flex-1 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1"
+                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg font-semibold flex items-center gap-1 transition"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       Đã sửa xong
                     </button>
-                  </>
-                ) : (
-                  <div className="flex-1 text-center py-1 bg-emerald-950/40 text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-800/40">
-                    ✓ Sự cố đã khắc phục
-                  </div>
-                )}
+                  )}
+                  {inc.incidentStatus === "OPEN" && (
+                    <button
+                      onClick={() => handleUpdateStatus(inc.id, "IN_PROGRESS")}
+                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg font-semibold flex items-center gap-1 transition"
+                    >
+                      <Wrench className="h-3.5 w-3.5" />
+                      Đang xử lý
+                    </button>
+                  )}
+                </div>
+
                 <button
                   onClick={() => handleDeleteIncident(inc.id)}
-                  className="p-1.5 bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-800 rounded-lg transition"
+                  className="p-1.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded-lg transition"
                   title="Xóa phiếu sự cố"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -302,8 +289,8 @@ export default function IncidentsPage() {
         </div>
 
         {filteredIncidents.length === 0 && !loading && (
-          <div className="text-center py-16 text-slate-500">
-            Không có sự cố thiết bị nào được ghi nhận.
+          <div className="text-center py-16 text-gray-400">
+            Không có phiếu sự cố nào phù hợp với bộ lọc hiện tại.
           </div>
         )}
       </div>
