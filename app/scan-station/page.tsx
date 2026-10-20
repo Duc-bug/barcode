@@ -24,6 +24,7 @@ import {
   VolumeX,
   ArrowLeft,
   Video,
+  VideoOff,
   RotateCcw,
   Barcode as BarcodeIcon,
 } from "lucide-react";
@@ -75,6 +76,7 @@ export default function ScanStationPage() {
   const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const [cameraRestartKey, setCameraRestartKey] = useState<number>(0);
+  const [cameraEnabled, setCameraEnabled] = useState<boolean>(true);
   const [manualInput, setManualInput] = useState<string>("");
 
   // Modal báo sự cố thiết bị khi quét mã EQ-
@@ -279,41 +281,67 @@ export default function ScanStationPage() {
     minBarcodeLength: 4,
   });
 
-  // 6. KHỞI CHẠY BỘ QUÉT CAMERA BẰNG HTML5-QRCODE (ZXING ENGINE CHUẨN CODE 128 / CODE 39)
+  // 6. TÌM KIẾM DANH SÁCH CAMERA 1 LẦN KHI MOUNT
+  useEffect(() => {
+    let isMounted = true;
+    import("html5-qrcode")
+      .then(({ Html5Qrcode }) => {
+        Html5Qrcode.getCameras()
+          .then((devices) => {
+            if (isMounted && devices && devices.length > 0) {
+              setCameras(devices);
+              setSelectedCameraId((prev) => prev || devices[0].id);
+            }
+          })
+          .catch((e) => console.warn("Lỗi nạp camera:", e));
+      })
+      .catch((e) => console.warn("Lỗi nạp thư viện html5-qrcode:", e));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // 7. KHỞI CHẠY BỘ QUÉT CAMERA BẰNG HTML5-QRCODE (TỐI ƯU 10 FPS, KHÔNG LÀM NÓNG MÁY / GIẬT LAG)
   useEffect(() => {
     let isCancelled = false;
 
-    async function initCamera() {
+    // Nếu người dùng chủ động tắt camera
+    if (!cameraEnabled) {
+      if (html5QrCodeRef.current) {
+        try {
+          if (html5QrCodeRef.current.isScanning) {
+            html5QrCodeRef.current.stop().catch(() => {});
+          }
+        } catch (e) {}
+        html5QrCodeRef.current = null;
+      }
+      setCameraActive(false);
+      return;
+    }
+
+    async function startCameraScanner() {
       try {
         const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
         if (isCancelled) return;
 
-        // Lấy danh sách các camera có sẵn
-        try {
-          const devices = await Html5Qrcode.getCameras();
-          if (devices && devices.length > 0) {
-            setCameras(devices);
-            if (!selectedCameraId) {
-              setSelectedCameraId(devices[0].id);
-            }
-          }
-        } catch (e) {
-          console.warn("Không lấy được danh sách camera:", e);
-        }
-
-        // Dừng scanner cũ nếu đang chạy
+        // Dừng và giải phóng scanner cũ trước khi mở luồng mới
         if (html5QrCodeRef.current) {
           try {
-            await html5QrCodeRef.current.stop();
+            if (html5QrCodeRef.current.isScanning) {
+              await html5QrCodeRef.current.stop();
+            }
           } catch (e) {}
+          html5QrCodeRef.current = null;
         }
+
+        const container = document.getElementById("interactive-webcam-reader");
+        if (!container || isCancelled) return;
 
         const html5QrCode = new Html5Qrcode("interactive-webcam-reader", {
           formatsToSupport: [
             Html5QrcodeSupportedFormats.CODE_128,
             Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.UPC_A,
             Html5QrcodeSupportedFormats.QR_CODE,
           ],
           verbose: false,
@@ -321,45 +349,53 @@ export default function ScanStationPage() {
 
         html5QrCodeRef.current = html5QrCode;
 
+        // Ưu tiên deviceId đã chọn, nếu chưa có thì dùng camera mặc định
         const cameraConfig = selectedCameraId
           ? { deviceId: { exact: selectedCameraId } }
-          : { facingMode: "user" };
+          : { facingMode: "environment" };
 
         await html5QrCode.start(
           cameraConfig,
           {
-            fps: 28, // Tốc độ lấy khung hình cao giúp nhận diện tức thì
+            fps: 10, // 10 FPS: Tần suất chuẩn giúp nhận diện cực nhạy (dưới 100ms) mà hoàn toàn không giật lag CPU
             qrbox: (viewfinderWidth, viewfinderHeight) => {
-              // Khung quét hình chữ nhật ngang siêu rộng tối ưu riêng cho mã vạch 1D Code 128
-              const width = Math.min(viewfinderWidth * 0.94, 520);
-              const height = Math.min(viewfinderHeight * 0.65, 230);
+              const w = viewfinderWidth > 0 ? viewfinderWidth : 480;
+              const h = viewfinderHeight > 0 ? viewfinderHeight : 320;
+              const width = Math.max(260, Math.min(Math.floor(w * 0.92), 520));
+              const height = Math.max(160, Math.min(Math.floor(h * 0.65), 230));
               return { width, height };
             },
-            aspectRatio: 1.333333,
           },
           (decodedText) => {
             handleBarcodeProcess(decodedText, "WEBCAM");
           },
-          () => {}
+          () => {} // Bỏ qua frame trống để tiết kiệm tài nguyên
         );
 
         if (!isCancelled) {
           setCameraActive(true);
         }
       } catch (err) {
-        console.warn("Lỗi khởi động Html5Qrcode camera:", err);
+        console.warn("Lỗi khởi động camera:", err);
+        if (!isCancelled) {
+          setCameraActive(false);
+        }
       }
     }
 
-    initCamera();
+    startCameraScanner();
 
     return () => {
       isCancelled = true;
       if (html5QrCodeRef.current) {
-        html5QrCodeRef.current.stop().catch(() => {});
+        try {
+          if (html5QrCodeRef.current.isScanning) {
+            html5QrCodeRef.current.stop().catch(() => {});
+          }
+        } catch (e) {}
       }
     };
-  }, [selectedCameraId, cameraRestartKey]);
+  }, [selectedCameraId, cameraRestartKey, cameraEnabled]);
 
   // 7. Gửi Báo cáo Sự cố Thiết bị
   const handleSubmitIncident = async (e: React.FormEvent) => {
@@ -517,62 +553,86 @@ export default function ScanStationPage() {
             {/* CONTAINER DÀNH CHO HTML5-QRCODE ENGINE (ZXING) */}
             <div id="interactive-webcam-reader" className="w-full h-full overflow-hidden" />
 
+            {/* MÀN HÌNH TẠM DỪNG KHI TẮT CAMERA */}
+            {!cameraEnabled && (
+              <div className="absolute inset-0 bg-gray-900/90 flex flex-col items-center justify-center text-center p-6 text-white space-y-3 z-20">
+                <VideoOff className="h-12 w-12 text-gray-400" />
+                <div className="font-bold text-sm">Ống kính Camera đang tạm tắt</div>
+                <p className="text-xs text-gray-400 max-w-xs">
+                  Giúp máy tính chạy êm và mượt. Bạn vẫn có thể dùng súng quét USB hoặc nhập mã thẻ bên dưới.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCameraEnabled(true)}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition shadow-md"
+                >
+                  Bật lại Camera
+                </button>
+              </div>
+            )}
+
             {/* TIA LASER ĐỎ CHUYỂN ĐỘNG & 4 GÓC NGẮM QUANG HỌC */}
-            <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-6">
-              <div className="flex justify-between">
-                <div
-                  className={`w-12 h-12 border-t-4 border-l-4 rounded-tl-xl transition-colors ${
-                    scanSuccessFlash ? "border-emerald-400" : "border-red-500"
-                  }`}
-                />
-                <div
-                  className={`w-12 h-12 border-t-4 border-r-4 rounded-tr-xl transition-colors ${
-                    scanSuccessFlash ? "border-emerald-400" : "border-red-500"
-                  }`}
-                />
-              </div>
+            {cameraEnabled && (
+              <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-6">
+                <div className="flex justify-between">
+                  <div
+                    className={`w-12 h-12 border-t-4 border-l-4 rounded-tl-xl transition-colors ${
+                      scanSuccessFlash ? "border-emerald-400" : "border-red-500"
+                    }`}
+                  />
+                  <div
+                    className={`w-12 h-12 border-t-4 border-r-4 rounded-tr-xl transition-colors ${
+                      scanSuccessFlash ? "border-emerald-400" : "border-red-500"
+                    }`}
+                  />
+                </div>
 
-              <div className="relative w-full h-24 flex items-center justify-center">
-                <div
-                  className={`w-full h-1 shadow-[0_0_20px_4px_rgba(239,68,68,0.9)] animate-laser-sweep transition-colors ${
-                    scanSuccessFlash ? "bg-emerald-400 shadow-[0_0_25px_5px_rgba(16,185,129,0.9)]" : "bg-red-500"
-                  }`}
-                />
-              </div>
+                <div className="relative w-full h-24 flex items-center justify-center">
+                  <div
+                    className={`w-full h-1 shadow-[0_0_20px_4px_rgba(239,68,68,0.9)] animate-laser-sweep transition-colors ${
+                      scanSuccessFlash ? "bg-emerald-400 shadow-[0_0_25px_5px_rgba(16,185,129,0.9)]" : "bg-red-500"
+                    }`}
+                  />
+                </div>
 
-              <div className="flex justify-between">
-                <div
-                  className={`w-12 h-12 border-b-4 border-l-4 rounded-bl-xl transition-colors ${
-                    scanSuccessFlash ? "border-emerald-400" : "border-red-500"
-                  }`}
-                />
-                <div
-                  className={`w-12 h-12 border-b-4 border-r-4 rounded-br-xl transition-colors ${
-                    scanSuccessFlash ? "border-emerald-400" : "border-red-500"
-                  }`}
-                />
+                <div className="flex justify-between">
+                  <div
+                    className={`w-12 h-12 border-b-4 border-l-4 rounded-bl-xl transition-colors ${
+                      scanSuccessFlash ? "border-emerald-400" : "border-red-500"
+                    }`}
+                  />
+                  <div
+                    className={`w-12 h-12 border-b-4 border-r-4 rounded-br-xl transition-colors ${
+                      scanSuccessFlash ? "border-emerald-400" : "border-red-500"
+                    }`}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* TRẠNG THÁI CAMERA & SÚNG QUÉT */}
-            <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-emerald-500/40 flex items-center gap-2 text-xs font-semibold shadow-lg">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-              <span className="text-emerald-400">CAMERA & SÚNG USB ĐANG SẴN SÀNG</span>
+            <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-emerald-500/40 flex items-center gap-2 text-xs font-semibold shadow-lg z-10">
+              <span className={`w-2.5 h-2.5 rounded-full ${cameraEnabled ? "bg-emerald-500 animate-ping" : "bg-gray-400"}`} />
+              <span className={cameraEnabled ? "text-emerald-400" : "text-gray-300"}>
+                {cameraEnabled ? "CAMERA 10 FPS & SÚNG USB SẴN SÀNG" : "ĐANG CHỜ SÚNG QUÉT USB"}
+              </span>
             </div>
 
             {/* HƯỚNG DẪN ĐIỂM DANH */}
-            <div className="absolute bottom-4 inset-x-4 bg-black/80 backdrop-blur-md p-2.5 rounded-xl border border-white/20 text-center">
-              <div className="text-xs font-semibold text-white flex items-center justify-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-400" />
-                Đưa mã vạch thẻ SV cách camera 15-25cm hoặc bóp cò súng quét USB
+            {cameraEnabled && (
+              <div className="absolute bottom-4 inset-x-4 bg-black/80 backdrop-blur-md p-2.5 rounded-xl border border-white/20 text-center z-10">
+                <div className="text-xs font-semibold text-white flex items-center justify-center gap-2">
+                  <Sparkles className="h-4 w-4 text-amber-400" />
+                  Đưa mã vạch thẻ SV cách camera 15-25cm hoặc bóp cò súng quét USB
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* ĐIỀU KHIỂN QUÉT, NGUỒN CAMERA & NHẬP MÃ THẺ NHANH */}
           <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm space-y-3.5">
-            {/* Bộ chọn camera & nút làm mới ống kính */}
-            <div className="flex items-center justify-between gap-2 text-xs border-b border-gray-100 pb-3">
+            {/* Bộ chọn camera, công tắc camera & nút làm mới ống kính */}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs border-b border-gray-100 pb-3">
               <div className="flex items-center gap-1.5 text-gray-700 font-semibold">
                 <Video className="h-4 w-4 text-red-600" />
                 <span>Nguồn Camera:</span>
@@ -581,7 +641,7 @@ export default function ScanStationPage() {
                 <select
                   value={selectedCameraId}
                   onChange={(e) => setSelectedCameraId(e.target.value)}
-                  className="bg-gray-50 border border-gray-200 text-gray-800 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-red-500 max-w-[200px] truncate"
+                  className="bg-gray-50 border border-gray-200 text-gray-800 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-red-500 max-w-[180px] truncate"
                 >
                   {cameras.length > 0 ? (
                     cameras.map((cam) => (
@@ -593,6 +653,21 @@ export default function ScanStationPage() {
                     <option value="">Camera mặc định</option>
                   )}
                 </select>
+
+                <button
+                  type="button"
+                  onClick={() => setCameraEnabled(!cameraEnabled)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                    cameraEnabled
+                      ? "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                      : "bg-red-50 border border-red-200 text-red-600 hover:bg-red-100"
+                  }`}
+                  title={cameraEnabled ? "Tắt Camera để giảm tải CPU" : "Bật lại Camera"}
+                >
+                  {cameraEnabled ? <VideoOff className="h-3.5 w-3.5" /> : <Video className="h-3.5 w-3.5" />}
+                  <span>{cameraEnabled ? "Tắt Cam" : "Bật Cam"}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setCameraRestartKey((k) => k + 1)}
