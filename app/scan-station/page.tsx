@@ -428,7 +428,7 @@ export default function ScanStationPage() {
             <Laptop className="h-4 w-4 text-emerald-600 flex-shrink-0" />
             <div>
               <div className="text-[10px] text-gray-500 uppercase font-semibold">Phòng máy:</div>
-              <div className="font-bold text-gray-900">LAB-CS3-G801 (Mạng & An ninh mạng)</div>
+              <div className="font-bold text-gray-900">Phòng 5.18 - Lầu 5, Tòa A (Cơ sở chính)</div>
             </div>
           </div>
 
