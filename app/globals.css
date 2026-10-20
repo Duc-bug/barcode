@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 248, 250, 252;
+  --background-start-rgb: 2, 6, 23;
+  --background-end-rgb: 15, 23, 42;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
+  min-height: 100vh;
+}
+
+/* Custom print media styles for A4 label stickers */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  @page {
+    margin: 10mm;
+    size: A4 portrait;
+  }
+}
+
+/* Html5Qrcode video container polish */
+#interactive-webcam-reader {
+  border: none !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#interactive-webcam-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+#interactive-webcam-reader__scan_region {
+  border: none !important;
+}
