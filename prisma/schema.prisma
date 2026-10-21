@@ -33,6 +33,7 @@ enum ScheduleStatus {
 enum ScanMethod {
   USB_SCANNER
   WEBCAM
+  DYNAMIC_QR
 }
 
 enum AttendanceStatus {

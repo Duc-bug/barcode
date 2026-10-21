@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   Zap,
+  QrCode,
   Calendar,
   Barcode,
   BarChart3,
@@ -27,34 +28,46 @@ export default function HomePage() {
 
           {/* Tiêu đề chính */}
           <h1 className="text-3xl sm:text-5xl lg:text-[54px] font-extrabold tracking-tight text-[#0F172A] leading-[1.18]">
-            Hệ thống Quản lý & Điểm danh phòng LAB bằng{" "}
+            Hệ thống Quản lý &amp; Điểm danh phòng LAB bằng{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-rose-600 to-orange-500">
-              Barcode
+              Barcode &amp; Dynamic QR
             </span>
           </h1>
 
           {/* Dòng mô tả phụ giàu thông tin */}
           <p className="text-base sm:text-lg text-[#475569] max-w-3xl mx-auto leading-relaxed font-normal">
-            Giải pháp quản lý thiết bị và tự động hóa điểm danh ca trực phòng máy bằng mã vạch Code 128, tích hợp cơ chế Chống Gian Lận 3 Lớp (Keystroke Timing &amp; Silent Snapshot) và quản lý lịch trực hiệu quả.
+            Giải pháp quản lý thiết bị và tự động hóa điểm danh ca trực phòng máy bằng mã vạch Code 128 &amp; mã QR động 15 giây, tích hợp cơ chế Chống Gian Lận 3 Lớp (Keystroke Timing &amp; Silent Snapshot) và quản lý lịch trực hiệu quả.
           </p>
 
-          {/* HÀNG NÚT BẤM (BUTTONS HÀNH ĐỘNG) */}
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-3">
+          {/* HÀNG NÚT BẤM (BUTTONS HÀNH ĐỘNG RIÊNG BIỆT) */}
+          <div className="flex flex-wrap items-center justify-center gap-3.5 pt-3">
+            {/* Phân hệ 1: Điểm danh Barcode thẻ */}
             <Link
               href="/scan-station"
-              className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold text-sm flex items-center gap-2.5 shadow-md shadow-red-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+              className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold text-sm flex items-center gap-2 shadow-md shadow-red-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
             >
               <Zap className="h-4 w-4" />
-              <span>Điểm Danh &amp; Trực Nhật</span>
+              <span>⚡ Điểm Danh Thẻ Barcode</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
 
+            {/* Phân hệ 2: Điểm danh QR Động 15s */}
+            <Link
+              href="/qr-station"
+              className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-sm flex items-center gap-2 shadow-md shadow-indigo-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <QrCode className="h-4 w-4" />
+              <span>📱 Trạm QR Động (Mô hình 2)</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+
+            {/* Phân hệ 3: Quản lý thiết bị */}
             <Link
               href="/equipments"
-              className="px-7 py-3.5 rounded-xl bg-white hover:bg-gray-50 text-[#0F172A] border border-gray-200 font-bold text-sm flex items-center gap-2.5 shadow-xs transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+              className="px-6 py-3.5 rounded-xl bg-white hover:bg-gray-50 text-[#0F172A] border border-gray-200 font-bold text-sm flex items-center gap-2 shadow-xs transition-all transform hover:-translate-y-0.5 active:translate-y-0"
             >
-              <BarChart3 className="h-4 w-4 text-red-600" />
-              <span>Quản lý Thiết bị &amp; In Tem A4</span>
+              <BarChart3 className="h-4 w-4 text-emerald-600" />
+              <span>Quản lý Thiết bị &amp; In Tem</span>
             </Link>
           </div>
         </div>
@@ -76,7 +89,7 @@ export default function HomePage() {
 
           {/* LƯỚI THẺ CHỨC NĂNG (CARDS) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Thẻ 1: Trạm Điểm danh Tự động */}
+            {/* Thẻ 1: Trạm Điểm danh Barcode (Thẻ vật lý) */}
             <Link
               href="/scan-station"
               className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-red-300 transition-all duration-200 flex flex-col justify-between group"
@@ -86,19 +99,41 @@ export default function HomePage() {
                   <Zap className="h-6 w-6 group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="text-base font-bold text-[#0F172A] group-hover:text-red-600 transition-colors">
-                  1. Trạm Điểm danh Tự động
+                  1. Trạm Điểm danh Barcode (Thẻ SV)
                 </h3>
                 <p className="text-xs text-[#334155] leading-relaxed">
-                  Tự động ghi nhận ca trực thông qua quét mã vạch và súng quét USB HID. Tích hợp camera chụp ảnh tức thì và thuật toán chống gian lận gõ phím.
+                  Tự động ghi nhận ca trực thông qua quét mã vạch thẻ sinh viên bằng camera trạm. Tích hợp camera chụp ảnh tức thì và thuật toán chống gian lận.
                 </p>
               </div>
               <div className="mt-6 pt-3.5 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-red-600">
-                <span>Mở trạm điểm danh →</span>
+                <span>Mở trạm quét thẻ →</span>
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
 
-            {/* Thẻ 2: Thiết bị & In nhãn Barcode */}
+            {/* Thẻ 2: Trạm QR Động Phòng Lab (Mô hình 2) */}
+            <Link
+              href="/qr-station"
+              className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 flex flex-col justify-between group"
+            >
+              <div className="space-y-3.5">
+                <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shadow-2xs">
+                  <QrCode className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="text-base font-bold text-[#0F172A] group-hover:text-purple-600 transition-colors">
+                  2. Trạm QR Động (Mô hình 2)
+                </h3>
+                <p className="text-xs text-[#334155] leading-relaxed">
+                  Màn hình chiếu mã QR thay đổi liên tục mỗi 15 giây. Sinh viên dùng camera điện thoại quét từ xa để check-in/check-out ca trực nhanh chóng, chống gian lận.
+                </p>
+              </div>
+              <div className="mt-6 pt-3.5 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-600">
+                <span>Mở màn hình chiếu QR →</span>
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+
+            {/* Thẻ 3: Thiết bị & In nhãn Barcode */}
             <Link
               href="/equipments"
               className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-200 flex flex-col justify-between group"
@@ -108,7 +143,7 @@ export default function HomePage() {
                   <Barcode className="h-6 w-6 group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="text-base font-bold text-[#0F172A] group-hover:text-amber-600 transition-colors">
-                  2. Thiết bị &amp; In nhãn Barcode
+                  3. Thiết bị &amp; In nhãn Barcode
                 </h3>
                 <p className="text-xs text-[#334155] leading-relaxed">
                   Cấp phát và quản lý mã vạch Code 128 (EQ-LAB801-PCxx) hàng loạt cho máy tính, thiết bị phòng Lab. Hỗ trợ in nhanh ra giấy decal A4 để dán trực tiếp.
@@ -120,7 +155,7 @@ export default function HomePage() {
               </div>
             </Link>
 
-            {/* Thẻ 3: Lịch trực & Phân công */}
+            {/* Thẻ 4: Lịch trực & Phân công */}
             <Link
               href="/schedules"
               className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all duration-200 flex flex-col justify-between group"
@@ -130,7 +165,7 @@ export default function HomePage() {
                   <Calendar className="h-6 w-6 group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="text-base font-bold text-[#0F172A] group-hover:text-blue-600 transition-colors">
-                  3. Lịch trực &amp; Phân công
+                  4. Lịch trực &amp; Phân công
                 </h3>
                 <p className="text-xs text-[#334155] leading-relaxed">
                   Sắp xếp lịch trực phòng máy theo tuần (Thứ 2 - Thứ 7), chia theo các Ca 1, Ca 2, Ca 3. Sinh viên chủ động đăng ký trực tuyến và được duyệt tự động.
@@ -142,7 +177,7 @@ export default function HomePage() {
               </div>
             </Link>
 
-            {/* Thẻ 4: Báo cáo sự cố phòng Lab (Hàng thẻ lấp ló phía dưới) */}
+            {/* Thẻ 5: Báo cáo sự cố phòng Lab (Hàng thẻ lấp ló phía dưới) */}
             <Link
               href="/incidents"
               className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-rose-300 transition-all duration-200 flex flex-col justify-between group opacity-90 hover:opacity-100"
@@ -152,7 +187,7 @@ export default function HomePage() {
                   <AlertTriangle className="h-6 w-6 group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="text-base font-bold text-[#0F172A] group-hover:text-rose-600 transition-colors">
-                  4. Quản lý Sự cố Thiết bị
+                  5. Quản lý Sự cố Thiết bị
                 </h3>
                 <p className="text-xs text-[#334155] leading-relaxed">
                   Theo dõi các máy tính báo hỏng từ ca trực bằng Smart Barcode Router, quản lý tiến độ sửa chữa thiết bị.
@@ -164,7 +199,7 @@ export default function HomePage() {
               </div>
             </Link>
 
-            {/* Thẻ 5: Dashboard & Xuất Excel */}
+            {/* Thẻ 6: Dashboard & Xuất Excel */}
             <Link
               href="/dashboard"
               className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all duration-200 flex flex-col justify-between group opacity-90 hover:opacity-100"
@@ -174,7 +209,7 @@ export default function HomePage() {
                   <BarChart3 className="h-6 w-6 group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="text-base font-bold text-[#0F172A] group-hover:text-emerald-600 transition-colors">
-                  5. Dashboard &amp; Xuất Excel
+                  6. Dashboard &amp; Xuất Excel
                 </h3>
                 <p className="text-xs text-[#334155] leading-relaxed">
                   Biểu đồ thống kê số giờ trực, tỷ lệ đi đúng giờ / trễ và tính năng xuất file bảng chấm công Excel (SheetJS).
@@ -186,7 +221,7 @@ export default function HomePage() {
               </div>
             </Link>
 
-            {/* Thẻ 6: Quản lý Hồ sơ Sinh viên & In thẻ Barcode */}
+            {/* Thẻ 7: Quản lý Hồ sơ Sinh viên & In thẻ Barcode */}
             <Link
               href="/users"
               className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 flex flex-col justify-between group opacity-90 hover:opacity-100"
@@ -196,7 +231,7 @@ export default function HomePage() {
                   <Users className="h-6 w-6 group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="text-base font-bold text-[#0F172A] group-hover:text-purple-600 transition-colors">
-                  6. Hồ sơ SV &amp; Thẻ Barcode
+                  7. Hồ sơ SV &amp; Thẻ Barcode
                 </h3>
                 <p className="text-xs text-[#334155] leading-relaxed">
                   Quản lý danh sách sinh viên thực tế, thêm sinh viên mới và in tem Barcode thẻ SV phục vụ quét điểm danh.
