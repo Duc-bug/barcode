@@ -14,8 +14,11 @@ import {
   X,
   Trash2,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function SchedulesPage() {
+function SchedulesContent() {
+  const { user, role } = useAuth();
   const [schedules, setSchedules] = useState<any[]>([]);
   const [labs, setLabs] = useState<any[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
@@ -118,13 +121,20 @@ export default function SchedulesPage() {
             </div>
           </div>
 
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
-          >
-            <Plus className="h-4 w-4" />
-            Đăng ký / Phân công Ca trực
-          </button>
+          {role !== "STATION" && (
+            <button
+              onClick={() => {
+                if (role === "STUDENT" && user) {
+                  setNewUserId(user.id);
+                }
+                setShowAddModal(true);
+              }}
+              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
+            >
+              <Plus className="h-4 w-4" />
+              {role === "STUDENT" ? "Đăng ký ca trực của tôi" : "Đăng ký / Phân công Ca trực"}
+            </button>
+          )}
         </header>
 
         {/* DANH SÁCH LỊCH TRỰC THEO THỜI GIAN */}
@@ -155,13 +165,15 @@ export default function SchedulesPage() {
                       ? "Đã duyệt"
                       : sch.scheduleStatus}
                   </span>
-                  <button
-                    onClick={() => handleDeleteSchedule(sch.id)}
-                    className="p-1 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded transition"
-                    title="Xóa lịch phân công"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {role === "ADMIN" && (
+                    <button
+                      onClick={() => handleDeleteSchedule(sch.id)}
+                      className="p-1 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded transition"
+                      title="Xóa lịch phân công (Chỉ Quản trị viên)"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -297,5 +309,13 @@ export default function SchedulesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SchedulesPage() {
+  return (
+    <ProtectedRoute allowedRoles={["ADMIN", "STUDENT", "STATION"]}>
+      <SchedulesContent />
+    </ProtectedRoute>
   );
 }

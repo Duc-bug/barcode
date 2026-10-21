@@ -15,8 +15,9 @@ import {
   Barcode,
 } from "lucide-react";
 import Link from "next/link";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function EquipmentsPage() {
+function EquipmentsContent() {
   const [equipments, setEquipments] = useState<any[]>([]);
   const [labs, setLabs] = useState<any[]>([]);
   const [selectedLabId, setSelectedLabId] = useState<string>("ALL");
@@ -342,5 +343,13 @@ export default function EquipmentsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function EquipmentsPage() {
+  return (
+    <ProtectedRoute allowedRoles={["ADMIN"]}>
+      <EquipmentsContent />
+    </ProtectedRoute>
   );
 }

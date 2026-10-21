@@ -26,8 +26,11 @@ import {
   Search,
   Filter,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const { user, role } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -127,21 +130,25 @@ export default function DashboardPage() {
             <div>
               <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                 <FileSpreadsheet className="h-6 w-6 text-emerald-600" />
-                THỐNG KÊ GIỜ TRỰC & XUẤT BẢNG CHẤM CÔNG
+                {role === "STUDENT" ? "THỐNG KÊ GIỜ TRỰC CÁ NHÂN CỦA TÔI" : "THỐNG KÊ GIỜ TRỰC & XUẤT BẢNG CHẤM CÔNG"}
               </h1>
               <p className="text-xs text-gray-500">
-                Thống kê số giờ sinh viên có mặt tại phòng Lab và xuất bảng tính Excel
+                {role === "STUDENT"
+                  ? `Theo dõi số giờ trực tích lũy và lịch sử điểm danh của sinh viên ${user?.fullName || ""}`
+                  : "Thống kê số giờ sinh viên có mặt tại phòng Lab và xuất bảng tính Excel"}
               </p>
             </div>
           </div>
 
-          <button
-            onClick={handleExportExcel}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition transform hover:-translate-y-0.5 active:translate-y-0"
-          >
-            <Download className="h-4 w-4" />
-            Xuất Excel Bảng Chấm Công (.xlsx)
-          </button>
+          {role === "ADMIN" && (
+            <button
+              onClick={handleExportExcel}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition transform hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <Download className="h-4 w-4" />
+              Xuất Excel Bảng Chấm Công (.xlsx)
+            </button>
+          )}
         </header>
 
         {/* 4 THẺ THỐNG KÊ (KPI METRICS) */}
@@ -355,6 +362,11 @@ export default function DashboardPage() {
               <tbody className="divide-y divide-gray-100 font-mono">
                 {data?.allLogs
                   ?.filter((log: any) => {
+                    // Nếu là sinh viên, chỉ xem lịch sử điểm danh của bản thân
+                    if (role === "STUDENT" && user && log.studentCode !== user.studentCode) {
+                      return false;
+                    }
+
                     const matchesSearch =
                       log.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                       log.studentCode.includes(searchTerm) ||
@@ -415,5 +427,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute allowedRoles={["ADMIN", "STUDENT"]}>
+      <DashboardContent />
+    </ProtectedRoute>
   );
 }

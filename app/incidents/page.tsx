@@ -14,8 +14,11 @@ import {
   User,
   Trash2,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function IncidentsPage() {
+function IncidentsContent() {
+  const { user, role } = useAuth();
   const [incidents, setIncidents] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -253,37 +256,43 @@ export default function IncidentsPage() {
                 </div>
               </div>
 
-              {/* ACTION BUTTONS */}
-              <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-1.5">
-                  {inc.incidentStatus !== "RESOLVED" && (
-                    <button
-                      onClick={() => handleUpdateStatus(inc.id, "RESOLVED")}
-                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg font-semibold flex items-center gap-1 transition"
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Đã sửa xong
-                    </button>
-                  )}
-                  {inc.incidentStatus === "OPEN" && (
-                    <button
-                      onClick={() => handleUpdateStatus(inc.id, "IN_PROGRESS")}
-                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg font-semibold flex items-center gap-1 transition"
-                    >
-                      <Wrench className="h-3.5 w-3.5" />
-                      Đang xử lý
-                    </button>
-                  )}
-                </div>
+              {/* ACTION BUTTONS (CHỈ QUẢN TRỊ VIÊN) */}
+              {role === "ADMIN" ? (
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    {inc.incidentStatus !== "RESOLVED" && (
+                      <button
+                        onClick={() => handleUpdateStatus(inc.id, "RESOLVED")}
+                        className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg font-semibold flex items-center gap-1 transition"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Đã sửa xong
+                      </button>
+                    )}
+                    {inc.incidentStatus === "OPEN" && (
+                      <button
+                        onClick={() => handleUpdateStatus(inc.id, "IN_PROGRESS")}
+                        className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg font-semibold flex items-center gap-1 transition"
+                      >
+                        <Wrench className="h-3.5 w-3.5" />
+                        Đang xử lý
+                      </button>
+                    )}
+                  </div>
 
-                <button
-                  onClick={() => handleDeleteIncident(inc.id)}
-                  className="p-1.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded-lg transition"
-                  title="Xóa phiếu sự cố"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
+                  <button
+                    onClick={() => handleDeleteIncident(inc.id)}
+                    className="p-1.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded-lg transition"
+                    title="Xóa phiếu sự cố (Chỉ Admin)"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="pt-2.5 border-t border-gray-100 text-[11px] text-gray-500 font-medium">
+                  Phiếu đã được tiếp nhận và phân công đội ngũ bảo trì xử lý.
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -295,5 +304,13 @@ export default function IncidentsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function IncidentsPage() {
+  return (
+    <ProtectedRoute allowedRoles={["ADMIN", "STUDENT"]}>
+      <IncidentsContent />
+    </ProtectedRoute>
   );
 }

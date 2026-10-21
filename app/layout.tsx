@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
 
 const inter = Inter({ subsets: ["latin", "vietnamese"] });
 
 export const metadata: Metadata = {
   title: "VLU Lab Barcode System | Quản lý & Điểm danh trực phòng LAB Khoa CNTT",
   description:
-    "Đề cương Đồ án tốt nghiệp: Xây dựng website quản lý và điểm danh trực phòng LAB Khoa CNTT bằng Barcode - Trường Đại học Văn Lang",
+    "Hệ thống quản lý và điểm danh trực phòng LAB Khoa CNTT bằng Barcode & Mã QR - Trường Đại học Văn Lang",
 };
 
 export default function RootLayout({
@@ -17,7 +18,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

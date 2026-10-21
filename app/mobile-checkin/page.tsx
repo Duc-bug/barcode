@@ -21,6 +21,7 @@ import {
   ShieldAlert,
   LocateFixed,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 // Tọa độ Cơ sở chính ĐH Văn Lang
 const VLU_CAMPUS = { lat: 10.82754, lng: 106.70003, maxRadius: 300 };
@@ -55,6 +56,8 @@ function MobileCheckInContent() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [distanceMeters, setDistanceMeters] = useState<number | null>(null);
 
+  const { user } = useAuth();
+
   // Khởi tạo Device ID & nạp MSSV
   useEffect(() => {
     try {
@@ -65,12 +68,16 @@ function MobileCheckInContent() {
       }
       setDeviceId(dId);
 
-      const savedCode = localStorage.getItem("vlu_saved_student_code");
-      if (savedCode) {
-        setStudentCode(savedCode);
+      if (user?.studentCode) {
+        setStudentCode(user.studentCode);
+      } else {
+        const savedCode = localStorage.getItem("vlu_saved_student_code");
+        if (savedCode) {
+          setStudentCode(savedCode);
+        }
       }
     } catch (e) {}
-  }, []);
+  }, [user]);
 
   // Hàm xin quyền và lấy tọa độ GPS
   const requestLocation = () => {

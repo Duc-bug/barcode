@@ -17,8 +17,11 @@ import {
   X,
   Barcode as BarcodeIcon,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function UsersManagementPage() {
+function UsersManagementContent() {
+  const { user, role: userRole } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -98,40 +101,49 @@ export default function UsersManagementPage() {
             <div>
               <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                 <Users className="h-6 w-6 text-red-600" />
-                DANH SÁCH GIẢNG VIÊN & SINH VIÊN TRỰC PHÒNG LAB
+                {userRole === "STUDENT" ? "HỒ SƠ CÁ NHÂN & THẺ BARCODE CỦA TÔI" : "DANH SÁCH GIẢNG VIÊN & SINH VIÊN TRỰC PHÒNG LAB"}
               </h1>
               <p className="text-xs text-gray-500">
-                Khoa Công nghệ Thông tin - Trường Đại học Văn Lang • Quản lý hồ sơ thật và in thẻ Barcode tạm
+                {userRole === "STUDENT"
+                  ? `Thông tin sinh viên trực phòng Lab và thẻ mã vạch Code 128 cá nhân của bạn`
+                  : "Khoa Công nghệ Thông tin - Trường Đại học Văn Lang • Quản lý hồ sơ thật và in thẻ Barcode"}
               </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
-          >
-            <UserPlus className="h-4 w-4" />
-            Thêm Sinh viên / Giảng viên Mới
-          </button>
+          {userRole === "ADMIN" && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition"
+            >
+              <UserPlus className="h-4 w-4" />
+              Thêm Sinh viên / Giảng viên Mới
+            </button>
+          )}
         </header>
 
-        {/* SEARCH */}
-        <div className="flex items-center gap-3 max-w-md">
-          <div className="relative flex-1">
-            <Search className="h-4 w-4 text-gray-400 absolute left-3 top-3" />
-            <input
-              type="text"
-              placeholder="Tìm theo MSSV, Họ và tên hoặc Email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 shadow-sm"
-            />
+        {/* SEARCH (CHỈ HIỂN THỊ KHI ADMIN QUẢN LÝ NHIỀU NGƯỜI) */}
+        {userRole === "ADMIN" && (
+          <div className="flex items-center gap-3 max-w-md">
+            <div className="relative flex-1">
+              <Search className="h-4 w-4 text-gray-400 absolute left-3 top-3" />
+              <input
+                type="text"
+                placeholder="Tìm theo MSSV, Họ và tên hoặc Email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 shadow-sm"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* USERS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredUsers.map((u) => (
+          {(userRole === "STUDENT" && user
+            ? users.filter((u) => u.studentCode === user.studentCode)
+            : filteredUsers
+          ).map((u) => (
             <div
               key={u.id}
               className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3.5 shadow-sm hover:shadow-md hover:border-gray-300 transition flex flex-col justify-between"
@@ -326,5 +338,13 @@ export default function UsersManagementPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function UsersManagementPage() {
+  return (
+    <ProtectedRoute allowedRoles={["ADMIN", "STUDENT"]}>
+      <UsersManagementContent />
+    </ProtectedRoute>
   );
 }

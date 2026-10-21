@@ -17,7 +17,13 @@ import {
   History,
   ShieldCheck,
   Smartphone,
+  Lock,
+  KeyRound,
+  X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAuth } from "@/lib/auth-context";
 
 interface QrSessionData {
   token: string;
@@ -27,7 +33,13 @@ interface QrSessionData {
   labName: string;
 }
 
-export default function QrStationPage() {
+function QrStationContent() {
+  const router = useRouter();
+  const { role } = useAuth();
+  const [showPinModal, setShowPinModal] = useState<boolean>(false);
+  const [pinCode, setPinCode] = useState<string>("");
+  const [pinError, setPinError] = useState<string | null>(null);
+
   const [qrSession, setQrSession] = useState<QrSessionData | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number>(20);
   const [currentTime, setCurrentTime] = useState<string>("");
@@ -36,6 +48,27 @@ export default function QrStationPage() {
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const lastLogIdRef = useRef<string | null>(null);
+
+  const handleExitClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (role === "STATION") {
+      setShowPinModal(true);
+      setPinCode("");
+      setPinError(null);
+    } else {
+      router.push("/");
+    }
+  };
+
+  const handleVerifyPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pinCode === "1234" || pinCode === "admin123") {
+      setShowPinModal(false);
+      router.push("/");
+    } else {
+      setPinError("Mã PIN bảo vệ không chính xác! (Mặc định: 1234)");
+    }
+  };
 
   // 1. Đồng hồ thời gian thực
   useEffect(() => {
@@ -152,13 +185,13 @@ export default function QrStationPage() {
       {/* 1. TOP HEADER (LIGHT MODE - SẮC NÉT & KHOA HỌC) */}
       <header className="border-b border-gray-200 bg-white/95 backdrop-blur-md px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-sm sticky top-0 z-30">
         <div className="flex items-center gap-3">
-          <Link
-            href="/"
+          <button
+            onClick={handleExitClick}
             className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
-            title="Quay lại Trang Chủ"
+            title="Thoát khỏi màn hình trạm"
           >
             <ArrowLeft className="h-5 w-5" />
-          </Link>
+          </button>
           <div
             className="h-9 w-9 rounded-xl bg-gradient-to-tr from-red-600 to-orange-500 flex items-center justify-center shadow-sm text-white flex-shrink-0"
             title="Trạm Dynamic QR Code"
@@ -401,6 +434,77 @@ export default function QrStationPage() {
           </div>
         </section>
       </main>
+
+      {/* MODAL MÃ PIN BẢO VỆ CHẾ ĐỘ KIOSK */}
+      {showPinModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-gray-200 max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+              <div className="flex items-center gap-2 text-slate-900 font-extrabold text-sm">
+                <Lock className="h-4 w-4 text-red-600" />
+                Xác Thực Thoát Kiosk
+              </div>
+              <button
+                onClick={() => setShowPinModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Màn hình trạm đang ở chế độ Kiosk bảo vệ. Vui lòng nhập mã PIN quản trị viên để thoát ra màn hình chính.
+            </p>
+
+            <form onSubmit={handleVerifyPin} className="space-y-3">
+              {pinError && (
+                <div className="text-xs font-semibold text-rose-600 bg-rose-50 p-2.5 rounded-xl border border-rose-200">
+                  {pinError}
+                </div>
+              )}
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-700 block mb-1 uppercase tracking-wide">
+                  Mã PIN Bảo Vệ (Mặc định: 1234)
+                </label>
+                <input
+                  type="password"
+                  autoFocus
+                  maxLength={6}
+                  value={pinCode}
+                  onChange={(e) => setPinCode(e.target.value)}
+                  placeholder="Nhập mã PIN..."
+                  className="w-full text-center tracking-widest text-lg font-mono font-bold bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 focus:border-red-500 focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowPinModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition shadow-sm"
+                >
+                  Xác Nhận Thoát
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function QrStationPage() {
+  return (
+    <ProtectedRoute allowedRoles={["ADMIN", "STATION"]}>
+      <QrStationContent />
+    </ProtectedRoute>
   );
 }

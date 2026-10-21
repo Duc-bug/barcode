@@ -23,6 +23,7 @@ import {
   VolumeX,
   ArrowLeft,
 } from "lucide-react";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface ScanResult {
   logId?: string;
@@ -51,7 +52,7 @@ interface EquipmentData {
   activeIncidents: any[];
 }
 
-export default function ScanStationPage() {
+function ScanStationContent() {
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [lastResult, setLastResult] = useState<ScanResult | null>(null);
   const [currentTime, setCurrentTime] = useState<string>("");
@@ -888,5 +889,13 @@ export default function ScanStationPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ScanStationPage() {
+  return (
+    <ProtectedRoute allowedRoles={["ADMIN", "STATION"]}>
+      <ScanStationContent />
+    </ProtectedRoute>
   );
 }
