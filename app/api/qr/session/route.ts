@@ -1,7 +1,30 @@
+import os from "os";
 import { NextRequest, NextResponse } from "next/server";
 import { generateQrSessionToken } from "@/lib/qr-security";
 
 export const dynamic = "force-dynamic";
+
+// Hàm lấy địa chỉ IP LAN của máy tính để điện thoại quét mã truy cập được
+function getLocalLanIp(): string | null {
+  const interfaces = os.networkInterfaces();
+  const candidates: string[] = [];
+
+  for (const name of Object.keys(interfaces)) {
+    const isVirtual =
+      name.toLowerCase().includes("warp") ||
+      name.toLowerCase().includes("virtual") ||
+      name.toLowerCase().includes("pseudo");
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === "IPv4" && !iface.internal) {
+        if (!isVirtual) {
+          return iface.address; // Ưu tiên card mạng thật (Wi-Fi, Ethernet, Hotspot)
+        }
+        candidates.push(iface.address);
+      }
+    }
+  }
+  return candidates[0] || null;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,9 +35,24 @@ export async function GET(req: NextRequest) {
     const { token, payload } = generateQrSessionToken(labCode, 30);
 
     // Xác định URL đầy đủ để điện thoại quét mã QR mở trực tiếp
-    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
+    let host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
     const proto = req.headers.get("x-forwarded-proto") || "http";
-    const checkInUrl = `${proto}://${host}/mobile-checkin?token=${token}&lab=${labCode}`;
+
+    // Nếu đang chạy bằng localhost hoặc 127.0.0.1, tự động thay bằng IP mạng LAN của máy tính
+    // để camera điện thoại quét vào không bị lỗi "cannot connect to localhost"
+    const envAppUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
+    let checkInUrl = "";
+
+    if (envAppUrl) {
+      checkInUrl = `${envAppUrl.replace(/\/$/, "")}/mobile-checkin?token=${token}&lab=${labCode}`;
+    } else if (host.includes("localhost") || host.includes("127.0.0.1")) {
+      const port = host.split(":")[1] || "3000";
+      const lanIp = getLocalLanIp();
+      const resolvedHost = lanIp ? `${lanIp}:${port}` : host;
+      checkInUrl = `${proto}://${resolvedHost}/mobile-checkin?token=${token}&lab=${labCode}`;
+    } else {
+      checkInUrl = `${proto}://${host}/mobile-checkin?token=${token}&lab=${labCode}`;
+    }
 
     return NextResponse.json({
       success: true,
