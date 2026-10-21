@@ -894,7 +894,7 @@ function ScanStationContent() {
 
 export default function ScanStationPage() {
   return (
-    <ProtectedRoute allowedRoles={["ADMIN", "STATION"]}>
+    <ProtectedRoute allowedRoles={["ADMIN", "STATION", "STUDENT"]}>
       <ScanStationContent />
     </ProtectedRoute>
   );

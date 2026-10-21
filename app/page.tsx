@@ -96,8 +96,15 @@ export default function HomePage() {
               /* STUDENT */
               <>
                 <Link
+                  href="/scan-station"
+                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-red-600/20 transition-all transform hover:-translate-y-0.5"
+                >
+                  <Zap className="h-4 w-4" />
+                  <span>Trạm Quét Thẻ Barcode</span>
+                </Link>
+                <Link
                   href="/mobile-checkin"
-                  className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold text-xs flex items-center gap-2 shadow-md shadow-indigo-600/20 transition-all transform hover:-translate-y-0.5"
+                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-indigo-600/20 transition-all transform hover:-translate-y-0.5"
                 >
                   <QrCode className="h-4 w-4" />
                   <span>Điểm Danh Ca Trực (Quét QR)</span>
@@ -105,7 +112,7 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/schedules"
-                  className="px-5 py-3.5 rounded-xl bg-white hover:bg-gray-50 text-[#0F172A] border border-gray-200 font-bold text-xs flex items-center gap-2 shadow-2xs transition-all"
+                  className="px-5 py-3 rounded-xl bg-white hover:bg-gray-50 text-[#0F172A] border border-gray-200 font-bold text-xs flex items-center gap-2 shadow-2xs transition-all"
                 >
                   <Calendar className="h-4 w-4 text-blue-600" />
                   <span>Lịch Trực Của Tôi</span>
@@ -263,12 +270,21 @@ export default function HomePage() {
               </>
             )}
 
-            {/* TRƯỜNG HỢP 3: STUDENT -> CHỈ HIỆN CÁC CHỨC NĂNG DÀNH CHO SV */}
+            {/* TRƯỜNG HỢP 3: STUDENT -> CÁC CHỨC NĂNG DÀNH CHO SV */}
             {user && role === "STUDENT" && (
               <>
                 <FeatureCard
+                  href="/scan-station"
+                  title="1. Điểm Danh Thẻ Barcode"
+                  desc="Mở camera hoặc máy quét mã vạch quét thẻ sinh viên Code 128 để Check-in / Check-out ca trực phòng Lab."
+                  btnText="Mở trạm quét Barcode →"
+                  colorClass="text-red-600 border-red-100 bg-rose-50"
+                  icon={<Zap className="h-6 w-6" />}
+                />
+
+                <FeatureCard
                   href="/mobile-checkin"
-                  title="1. Điểm Danh Ca Trực (Mã QR)"
+                  title="2. Điểm Danh Ca Trực (Mã QR)"
                   desc="Mở camera điện thoại quét mã QR chiếu trên màn hình phòng Lab để Check-in / Check-out ca trực."
                   btnText="Mở màn hình điểm danh →"
                   colorClass="text-purple-600 border-purple-100 bg-purple-50"
@@ -277,7 +293,7 @@ export default function HomePage() {
 
                 <FeatureCard
                   href="/schedules"
-                  title="2. Đăng Ký &amp; Lịch Trực Của Tôi"
+                  title="3. Đăng Ký &amp; Lịch Trực Của Tôi"
                   desc="Xem lịch trực chung của phòng máy, đăng ký ca trực còn trống và theo dõi lịch cá nhân."
                   btnText="Xem &amp; Đăng ký ca trực →"
                   colorClass="text-blue-600 border-blue-100 bg-blue-50"
@@ -286,7 +302,7 @@ export default function HomePage() {
 
                 <FeatureCard
                   href="/incidents"
-                  title="3. Báo Cáo Hỏng Thiết Bị"
+                  title="4. Báo Cáo Hỏng Thiết Bị"
                   desc="Quét mã vạch thiết bị máy tính gặp sự cố trong ca trực để báo cáo gửi lên quản trị viên."
                   btnText="Tạo báo cáo sự cố →"
                   colorClass="text-rose-600 border-rose-100 bg-rose-50"
@@ -295,7 +311,7 @@ export default function HomePage() {
 
                 <FeatureCard
                   href="/dashboard"
-                  title="4. Thống Kê Giờ Trực Của Tôi"
+                  title="5. Thống Kê Giờ Trực Của Tôi"
                   desc="Xem tổng số giờ trực tích lũy trong tháng, lịch sử chấm công và tỷ lệ đúng giờ của bạn."
                   btnText="Xem số giờ trực cá nhân →"
                   colorClass="text-emerald-600 border-emerald-100 bg-emerald-50"
@@ -304,7 +320,7 @@ export default function HomePage() {
 
                 <FeatureCard
                   href="/users"
-                  title="5. Thẻ Barcode Của Tôi"
+                  title="6. Thẻ Barcode Của Tôi"
                   desc="Xem thẻ sinh viên điện tử kèm mã vạch Barcode Code 128 dùng để quét tại trạm phòng Lab."
                   btnText="Xem thẻ Barcode cá nhân →"
                   colorClass="text-indigo-600 border-indigo-100 bg-indigo-50"
