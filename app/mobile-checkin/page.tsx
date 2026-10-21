@@ -122,7 +122,7 @@ function MobileCheckInContent() {
             Điểm Danh Ca Trực Phòng LAB
           </h1>
           <p className="text-xs text-slate-500 font-medium">
-            Xác thực thông qua Dynamic QR Code • Phòng 5.18 Tòa A
+            Điểm danh qua mã QR • Phòng 5.18, Tòa A
           </p>
         </div>
       </div>

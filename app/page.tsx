@@ -30,13 +30,13 @@ export default function HomePage() {
           <h1 className="text-3xl sm:text-5xl lg:text-[54px] font-extrabold tracking-tight text-[#0F172A] leading-[1.18]">
             Hệ thống Quản lý &amp; Điểm danh phòng LAB bằng{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-rose-600 to-orange-500">
-              Barcode &amp; Dynamic QR
+              Barcode &amp; Mã QR
             </span>
           </h1>
 
-          {/* Dòng mô tả phụ giàu thông tin */}
+          {/* Dòng mô tả phụ */}
           <p className="text-base sm:text-lg text-[#475569] max-w-3xl mx-auto leading-relaxed font-normal">
-            Giải pháp quản lý thiết bị và tự động hóa điểm danh ca trực phòng máy bằng mã vạch Code 128 &amp; mã QR động 15 giây, tích hợp cơ chế Chống Gian Lận 3 Lớp (Keystroke Timing &amp; Silent Snapshot) và quản lý lịch trực hiệu quả.
+            Hệ thống quản lý thiết bị và điểm danh ca trực phòng máy cho sinh viên Khoa Công nghệ Thông tin, hỗ trợ quét mã vạch thẻ sinh viên và quét mã QR.
           </p>
 
           {/* HÀNG NÚT BẤM (BUTTONS HÀNH ĐỘNG RIÊNG BIỆT) */}
@@ -51,13 +51,13 @@ export default function HomePage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
 
-            {/* Phân hệ 2: Điểm danh QR Động 15s */}
+            {/* Phân hệ 2: Điểm danh bằng Mã QR */}
             <Link
               href="/qr-station"
               className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-sm flex items-center gap-2 shadow-md shadow-indigo-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
             >
               <QrCode className="h-4 w-4" />
-              <span>📱 Trạm QR Động (Mô hình 2)</span>
+              <span>📱 Điểm Danh Bằng Mã QR</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
 
@@ -102,7 +102,7 @@ export default function HomePage() {
                   1. Trạm Điểm danh Barcode (Thẻ SV)
                 </h3>
                 <p className="text-xs text-[#334155] leading-relaxed">
-                  Tự động ghi nhận ca trực thông qua quét mã vạch thẻ sinh viên bằng camera trạm. Tích hợp camera chụp ảnh tức thì và thuật toán chống gian lận.
+                  Ghi nhận ca trực nhanh chóng qua đầu đọc mã vạch hoặc camera quét thẻ sinh viên tại phòng Lab.
                 </p>
               </div>
               <div className="mt-6 pt-3.5 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-red-600">
@@ -111,7 +111,7 @@ export default function HomePage() {
               </div>
             </Link>
 
-            {/* Thẻ 2: Trạm QR Động Phòng Lab (Mô hình 2) */}
+            {/* Thẻ 2: Điểm Danh Bằng Mã QR */}
             <Link
               href="/qr-station"
               className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 flex flex-col justify-between group"
@@ -121,14 +121,14 @@ export default function HomePage() {
                   <QrCode className="h-6 w-6 group-hover:scale-110 transition-transform" />
                 </div>
                 <h3 className="text-base font-bold text-[#0F172A] group-hover:text-purple-600 transition-colors">
-                  2. Trạm QR Động (Mô hình 2)
+                  2. Điểm Danh Bằng Mã QR
                 </h3>
                 <p className="text-xs text-[#334155] leading-relaxed">
-                  Màn hình chiếu mã QR thay đổi liên tục mỗi 15 giây. Sinh viên dùng camera điện thoại quét từ xa để check-in/check-out ca trực nhanh chóng, chống gian lận.
+                  Màn hình hiển thị mã QR tại phòng Lab. Sinh viên sử dụng điện thoại quét mã để ghi nhận giờ vào và giờ ra ca trực.
                 </p>
               </div>
               <div className="mt-6 pt-3.5 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-purple-600">
-                <span>Mở màn hình chiếu QR →</span>
+                <span>Mở trạm quét QR →</span>
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>

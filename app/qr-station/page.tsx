@@ -17,7 +17,6 @@ import {
   History,
   ShieldCheck,
   Smartphone,
-  ExternalLink,
 } from "lucide-react";
 
 interface QrSessionData {
@@ -168,14 +167,14 @@ export default function QrStationPage() {
           </div>
           <div>
             <h1 className="text-lg font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
-              TRẠM ĐIỂM DANH QR CODE ĐỘNG PHÒNG LAB
+              TRẠM ĐIỂM DANH MÃ QR PHÒNG LAB
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 tracking-normal flex items-center gap-1">
-                <ShieldCheck className="h-3 w-3 text-emerald-600" />
-                BẢO MẬT 20S
+                <RefreshCw className="h-3 w-3 text-emerald-600" />
+                TỰ ĐỘNG CẬP NHẬT
               </span>
             </h1>
             <p className="text-xs text-gray-500 font-medium">
-              Sinh viên mở Camera điện thoại quét mã QR để Check-in / Check-out ca trực
+              Sinh viên dùng điện thoại quét mã QR để điểm danh ca trực
             </p>
           </div>
         </div>
@@ -273,12 +272,12 @@ export default function QrStationPage() {
               )}
             </div>
 
-            {/* THANH TIẾN TRÌNH & ĐẾM NGƯỢC 15S */}
+            {/* THANH TIẾN TRÌNH & ĐẾM NGƯỢC */}
             <div className="w-full space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold">
                 <span className="text-slate-600 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  Mã có hiệu lực:
+                  Mã đổi sau:
                 </span>
                 <span className="font-mono text-sm font-bold text-red-600 bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200">
                   {secondsLeft}s
@@ -294,29 +293,16 @@ export default function QrStationPage() {
               </div>
             </div>
 
-            {/* BANNER HƯỚNG DẪN MÀU CHARCOAL SANG TRỌNG */}
+            {/* BANNER HƯỚNG DẪN MÀU CHARCOAL */}
             <div className="w-full bg-zinc-900/90 text-amber-200 p-3 rounded-xl border border-zinc-700/60 shadow-xs text-center text-xs space-y-1">
               <div className="font-bold text-white flex items-center justify-center gap-1.5">
                 <Sparkles className="h-4 w-4 text-amber-300" />
-                Mở Camera điện thoại hoặc Zalo để quét
+                Mở camera điện thoại để quét mã
               </div>
               <p className="text-[11px] text-zinc-300 font-normal">
-                Mã đổi liên tục mỗi 15 giây • Không thể chụp ảnh gửi điểm danh hộ
+                Mã tự động làm mới định kỳ tại phòng máy
               </p>
             </div>
-
-            {/* Link mở thử nghiệm trên cùng máy nếu cần */}
-            {qrSession && (
-              <a
-                href={qrSession.checkInUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[11px] text-blue-600 hover:text-blue-800 flex items-center gap-1 transition"
-              >
-                Mở trang điểm danh mẫu trên tab mới
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            )}
           </div>
         </section>
 
@@ -357,7 +343,7 @@ export default function QrStationPage() {
                             <span>{log.studentCode}</span>
                             {log.scanMethod === "DYNAMIC_QR" && (
                               <span className="text-[9px] px-1.5 py-0.2 bg-purple-50 text-purple-700 border border-purple-200 rounded font-sans font-semibold">
-                                Dynamic QR
+                                Quét QR
                               </span>
                             )}
                           </div>
@@ -406,7 +392,7 @@ export default function QrStationPage() {
             <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                Hệ thống tự động đồng bộ song song với máy quét Barcode thẻ vật lý.
+                Dữ liệu điểm danh được cập nhật tự động vào hệ thống.
               </span>
               <span className="font-medium text-slate-700">
                 Tổng lượt hôm nay: {recentLogs.length}
