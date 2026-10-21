@@ -189,3 +189,12 @@ npm start
 - **Thẻ Sinh Viên**: Mã hóa chuỗi MSSV chuẩn Văn Lang (VD: `2373401010100`).
 - **Thiết Bị Phòng Lab**: Tiền tố `EQ-` kết hợp mã phòng và số thứ tự máy trạm (VD: `EQ-LAB801-PC01` đến `EQ-LAB801-PC40`).
 - **Độ phân giải in**: Tối thiểu 300 DPI, chuẩn tỷ lệ thanh 1:2.5 giúp súng quét đọc ngay cả trong điều kiện ánh sáng yếu.
+
+---
+
+## 📱 Kế Hoạch Nâng Cấp: Điểm Danh Bằng Dynamic QR Code (Mô Hình 2)
+Nhằm hiện đại hóa quy trình điểm danh và giải quyết bài toán đông sinh viên đầu ca trực tại Phòng 5.18 Tòa A Cơ sở chính, hệ thống đang triển khai kế hoạch bổ sung phân hệ:
+- **Màn hình Trạm Lab chiếu QR động:** Tự động thay đổi mã QR bảo mật mỗi 15 giây (HMAC-SHA256 Token).
+- **Sinh viên dùng Smartphone quét mã:** Điểm danh nhanh không cần xếp hàng, tích hợp cơ chế Chống Gian Lận 3 Lớp (Token TTL 15s + Ký số bí mật + Xác thực IP Wi-Fi Lab CS3).
+- Chi tiết kế hoạch và kiến trúc triển khai xem tại: **[docs/KE_HOACH_DIEM_DANH_QR_CODE.md](file:///e:/Barcode/docs/KE_HOACH_DIEM_DANH_QR_CODE.md)**
+
