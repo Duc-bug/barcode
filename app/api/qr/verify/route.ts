@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyQrSessionToken } from "@/lib/qr-security";
+import { verifyVluLocation } from "@/lib/geo-security";
 import { ScanMethod, AttendanceStatus, ScheduleStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { token, studentCode, clientNote } = body;
+    const { token, studentCode, clientNote, latitude, longitude, deviceId } = body;
 
     if (!token || !studentCode) {
       return NextResponse.json(
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Xác thực tính hợp lệ và thời hạn 15 giây của Token mã QR
+    // 1. Xác thực tính hợp lệ và thời hạn của Token mã QR
     const verification = verifyQrSessionToken(token);
     if (!verification.valid || !verification.payload) {
       return NextResponse.json(
@@ -30,10 +31,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 2. Xác thực vị trí GPS tại Cơ sở chính Đại học Văn Lang (Giải pháp 1)
+    const locationCheck = verifyVluLocation(latitude, longitude);
+    if (!locationCheck.isValid) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "LOCATION_OUT_OF_RANGE",
+          message: locationCheck.error,
+          distanceMeters: locationCheck.distanceMeters,
+          formattedDistance: locationCheck.formattedDistance,
+        },
+        { status: 403 }
+      );
+    }
+
     const { labCode } = verification.payload;
     const cleanStudentCode = studentCode.trim();
 
-    // 2. Tra cứu sinh viên theo MSSV trong cơ sở dữ liệu
+    // 3. Tra cứu sinh viên theo MSSV trong cơ sở dữ liệu
     const user = await prisma.user.findFirst({
       where: { studentCode: cleanStudentCode },
     });
@@ -49,7 +65,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Lấy thông tin phòng Lab
+    // 4. Ràng buộc 1 thiết bị chỉ điểm danh cho 1 sinh viên trong ngày (Giải pháp 2)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (deviceId) {
+      const deviceUsedLog = await prisma.dutySchedule.findFirst({
+        where: {
+          dutyDate: { gte: today },
+          note: { contains: `[Device: ${deviceId}]` },
+          userId: { not: user.id }, // Đã từng dùng cho sinh viên khác
+        },
+        include: { user: true },
+      });
+
+      if (deviceUsedLog && deviceUsedLog.user) {
+        return NextResponse.json(
+          {
+            success: false,
+            code: "DEVICE_ALREADY_USED_FOR_ANOTHER_STUDENT",
+            message: `Thiết bị này đã được sử dụng để điểm danh cho sinh viên khác (${deviceUsedLog.user.fullName} - MSSV: ${deviceUsedLog.user.studentCode}) trong hôm nay. Mỗi điện thoại chỉ được dùng cho 1 sinh viên, không thể điểm danh hộ!`,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    // 5. Lấy thông tin phòng Lab
     let targetLab = await prisma.labRoom.findFirst({
       where: {
         OR: [{ labCode }, { labCode: "LAB-CS3-G801" }],
@@ -80,8 +122,6 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
     const clientIp =
       req.headers.get("x-forwarded-for")?.split(",")[0] ||
@@ -160,6 +200,10 @@ export async function POST(req: NextRequest) {
     // -------------------------------------------------------------------------
     // TRƯỜNG HỢP B: CHƯA CHECK-IN -> THỰC HIỆN CHECK-IN VÀO PHÒNG LAB
     // -------------------------------------------------------------------------
+    const deviceTag = deviceId ? `[Device: ${deviceId}]` : "";
+    const distanceTag = locationCheck.distanceMeters >= 0 ? `[VLU: ${locationCheck.distanceMeters}m]` : "";
+    const fullNote = `Điểm danh QR di động ${deviceTag} ${distanceTag} ${clientNote ? `(${clientNote})` : ""}`.trim();
+
     const newSchedule = await prisma.dutySchedule.create({
       data: {
         userId: user.id,
@@ -167,9 +211,7 @@ export async function POST(req: NextRequest) {
         shiftId: defaultShift.id,
         dutyDate: today,
         scheduleStatus: ScheduleStatus.APPROVED,
-        note: clientNote
-          ? `Điểm danh qua Dynamic QR di động (${clientNote})`
-          : "Điểm danh qua Dynamic QR di động",
+        note: fullNote,
       },
     });
 

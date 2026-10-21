@@ -16,7 +16,27 @@ import {
   LogOut,
   RefreshCw,
   Home,
+  MapPin,
+  ShieldCheck,
+  ShieldAlert,
+  LocateFixed,
 } from "lucide-react";
+
+// Tọa độ Cơ sở chính ĐH Văn Lang
+const VLU_CAMPUS = { lat: 10.82754, lng: 106.70003, maxRadius: 300 };
+
+function calculateHaversine(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371e3;
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+    Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
 
 function MobileCheckInContent() {
   const searchParams = useSearchParams();
@@ -29,14 +49,63 @@ function MobileCheckInContent() {
   const [result, setResult] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Nạp MSSV đã lưu từ LocalStorage nếu có
+  // GPS & Device state
+  const [deviceId, setDeviceId] = useState<string>("");
+  const [geoStatus, setGeoStatus] = useState<"IDLE" | "LOCATING" | "SUCCESS" | "DENIED" | "ERROR">("LOCATING");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [distanceMeters, setDistanceMeters] = useState<number | null>(null);
+
+  // Khởi tạo Device ID & nạp MSSV
   useEffect(() => {
     try {
+      let dId = localStorage.getItem("vlu_device_id");
+      if (!dId) {
+        dId = "dev_" + Math.random().toString(36).substring(2, 10) + "_" + Date.now();
+        localStorage.setItem("vlu_device_id", dId);
+      }
+      setDeviceId(dId);
+
       const savedCode = localStorage.getItem("vlu_saved_student_code");
       if (savedCode) {
         setStudentCode(savedCode);
       }
     } catch (e) {}
+  }, []);
+
+  // Hàm xin quyền và lấy tọa độ GPS
+  const requestLocation = () => {
+    setGeoStatus("LOCATING");
+    setErrorMsg(null);
+
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setGeoStatus("ERROR");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setCoords({ lat, lng });
+        const dist = calculateHaversine(lat, lng, VLU_CAMPUS.lat, VLU_CAMPUS.lng);
+        setDistanceMeters(dist);
+        setGeoStatus("SUCCESS");
+      },
+      (err) => {
+        console.warn("Lỗi GPS:", err);
+        if (err.code === err.PERMISSION_DENIED) {
+          setGeoStatus("DENIED");
+        } else {
+          setGeoStatus("ERROR");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  // Tự động xin GPS khi vào trang
+  useEffect(() => {
+    requestLocation();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,6 +138,9 @@ function MobileCheckInContent() {
         body: JSON.stringify({
           token,
           studentCode: studentCode.trim(),
+          latitude: coords?.lat,
+          longitude: coords?.lng,
+          deviceId,
           clientNote: "Mobile Browser Check-in",
         }),
       });
@@ -142,6 +214,74 @@ function MobileCheckInContent() {
               </div>
               <div className="text-[11px] text-slate-500">Cơ sở chính (CS3) Trường ĐH Văn Lang</div>
             </div>
+          </div>
+
+          {/* TRẠNG THÁI XÁC THỰC VỊ TRÍ GPS (CHỐNG GIAN LẬN Ở NHÀ) */}
+          <div className="p-3.5 rounded-2xl border border-gray-200 bg-white text-xs space-y-2 shadow-2xs">
+            <div className="flex items-center justify-between font-bold">
+              <span className="flex items-center gap-1.5 text-slate-700">
+                <MapPin className="h-4 w-4 text-red-600" />
+                Vị trí sinh viên:
+              </span>
+
+              {geoStatus === "LOCATING" && (
+                <span className="text-[11px] text-amber-600 font-semibold flex items-center gap-1">
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  Đang lấy GPS...
+                </span>
+              )}
+
+              {geoStatus === "SUCCESS" && distanceMeters !== null && (
+                <span
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                    distanceMeters <= VLU_CAMPUS.maxRadius
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : "bg-rose-50 text-rose-800 border border-rose-200"
+                  }`}
+                >
+                  {distanceMeters <= VLU_CAMPUS.maxRadius ? (
+                    <>
+                      <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                      Tại trường ({distanceMeters}m)
+                    </>
+                  ) : (
+                    <>
+                      <ShieldAlert className="h-3 w-3 text-rose-600" />
+                      Ngoài trường ({distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(1)}km` : `${distanceMeters}m`})
+                    </>
+                  )}
+                </span>
+              )}
+
+              {(geoStatus === "DENIED" || geoStatus === "ERROR") && (
+                <button
+                  type="button"
+                  onClick={requestLocation}
+                  className="text-[11px] text-red-600 hover:text-red-700 font-bold underline flex items-center gap-1"
+                >
+                  <LocateFixed className="h-3 w-3" />
+                  Bật lại GPS
+                </button>
+              )}
+            </div>
+
+            {geoStatus === "DENIED" && (
+              <p className="text-[11px] text-rose-600 leading-relaxed font-medium">
+                ⚠️ Bạn đã chặn quyền vị trí. Vui lòng vào Cài đặt trình duyệt &gt; Cho phép Vị trí để xác thực bạn đang có mặt tại trường Văn Lang.
+              </p>
+            )}
+
+            {geoStatus === "SUCCESS" && distanceMeters !== null && distanceMeters > VLU_CAMPUS.maxRadius && (
+              <p className="text-[11px] text-rose-600 leading-relaxed font-medium">
+                ⚠️ Bạn đang ở cách trường {(distanceMeters / 1000).toFixed(1)}km (vượt quá bán kính 300m). Hệ thống sẽ từ chối điểm danh nếu bạn đang ở nhà!
+              </p>
+            )}
+
+            {geoStatus === "SUCCESS" && distanceMeters !== null && distanceMeters <= VLU_CAMPUS.maxRadius && (
+              <p className="text-[11px] text-emerald-700 leading-relaxed font-medium">
+                ✓ Đã xác thực bạn đang có mặt trong khuôn viên Cơ sở chính ĐH Văn Lang.
+              </p>
+            )}
           </div>
 
           {/* HIỂN THỊ KẾT QUẢ THÀNH CÔNG */}
