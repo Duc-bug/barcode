@@ -31,20 +31,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Xác thực vị trí GPS tại Cơ sở chính Đại học Văn Lang (Giải pháp 1)
+    // 2. Ghi nhận vị trí GPS tại Cơ sở chính Đại học Văn Lang (Giải pháp 1)
     const locationCheck = verifyVluLocation(latitude, longitude);
-    if (!locationCheck.isValid) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "LOCATION_OUT_OF_RANGE",
-          message: locationCheck.error,
-          distanceMeters: locationCheck.distanceMeters,
-          formattedDistance: locationCheck.formattedDistance,
-        },
-        { status: 403 }
-      );
-    }
 
     const { labCode } = verification.payload;
     const cleanStudentCode = studentCode.trim();
@@ -201,7 +189,10 @@ export async function POST(req: NextRequest) {
     // TRƯỜNG HỢP B: CHƯA CHECK-IN -> THỰC HIỆN CHECK-IN VÀO PHÒNG LAB
     // -------------------------------------------------------------------------
     const deviceTag = deviceId ? `[Device: ${deviceId}]` : "";
-    const distanceTag = locationCheck.distanceMeters >= 0 ? `[VLU: ${locationCheck.distanceMeters}m]` : "";
+    const distanceTag =
+      locationCheck.distanceMeters >= 0
+        ? `[GPS: cách ${locationCheck.formattedDistance}${locationCheck.isValid ? " - Trong khuôn viên" : " - Ngoại vi"}]`
+        : "[GPS: Chưa xác định]";
     const fullNote = `Điểm danh QR di động ${deviceTag} ${distanceTag} ${clientNote ? `(${clientNote})` : ""}`.trim();
 
     const newSchedule = await prisma.dutySchedule.create({
@@ -240,6 +231,8 @@ export async function POST(req: NextRequest) {
         checkOutTime: null,
         durationText: "Vừa mới vào phòng Lab",
         scanMethod: "DYNAMIC_QR",
+        distanceMeters: locationCheck.distanceMeters,
+        formattedDistance: locationCheck.formattedDistance,
       },
     });
   } catch (error: any) {
